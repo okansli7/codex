@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(120) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
-  role ENUM('Admin','Moderatör','Satıcı','Kullanıcı') NOT NULL DEFAULT 'Kullanıcı',
+  role ENUM('Admin','Moderator','Seller','User') NOT NULL DEFAULT 'User',
   avatar_url VARCHAR(255) DEFAULT NULL,
   phone VARCHAR(40) DEFAULT NULL,
   address TEXT DEFAULT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS auctions (
   title VARCHAR(180) NOT NULL,
   description TEXT DEFAULT NULL,
   seller_id INT UNSIGNED NOT NULL,
-  status ENUM('Yayında','Onay Bekliyor','Durduruldu') NOT NULL DEFAULT 'Onay Bekliyor',
+  status ENUM('Live','Pending','Paused') NOT NULL DEFAULT 'Pending',
   lot_count INT UNSIGNED NOT NULL DEFAULT 1,
   start_price DECIMAL(12,2) NOT NULL DEFAULT 0,
   current_price DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS site_settings (
 INSERT INTO users (name, email, password_hash, role, vip)
 VALUES
   ('Artirup Admin', 'admin@artirup.com', '$2y$10$replace_with_bcrypt_hash', 'Admin', 0),
-  ('Artirup Moderator', 'moderator@artirup.com', '$2y$10$replace_with_bcrypt_hash', 'Moderatör', 0)
+  ('Artirup Moderator', 'moderator@artirup.com', '$2y$10$replace_with_bcrypt_hash', 'Moderator', 0)
 ON DUPLICATE KEY UPDATE name=VALUES(name);
 
 INSERT INTO categories (name)
