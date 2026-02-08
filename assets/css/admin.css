@@ -1,0 +1,273 @@
+:root {
+    --bg: #f3f4f8;
+    --dark: #1f2335;
+    --muted: #7b829a;
+    --card: #ffffff;
+    --accent: #ff3d6e;
+    --line: #e7e9f2;
+    --shadow: 0 20px 40px rgba(19, 24, 38, 0.08);
+    --success: #1f9d62;
+    --warning: #d88700;
+    --danger: #d81b3a;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Manrope", system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--dark);
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+}
+
+aside {
+    background: var(--dark);
+    color: #fff;
+    padding: 28px 22px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 1.2rem;
+}
+
+.brand span {
+    background: var(--accent);
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+}
+
+.menu {
+    margin-top: 32px;
+    display: grid;
+    gap: 14px;
+}
+
+.menu a {
+    color: #d7d9e8;
+    text-decoration: none;
+    padding: 10px 14px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.menu a.active,
+.menu a:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+main {
+    padding: 28px 40px 50px;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    gap: 12px;
+}
+
+.topbar input {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 10px 16px;
+    width: 320px;
+}
+
+.topbar .admin {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 18px;
+    margin-bottom: 28px;
+}
+
+.kpi {
+    background: var(--card);
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+}
+
+.kpi span {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 24px;
+}
+
+.panel {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+th,
+td {
+    text-align: left;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.status {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.status.ok {
+    background: #e4f9ef;
+    color: var(--success);
+}
+
+.status.wait {
+    background: #fff4db;
+    color: var(--warning);
+}
+
+.status.no {
+    background: #ffe1e6;
+    color: var(--danger);
+}
+
+.badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #f1f2f8;
+    color: var(--muted);
+}
+
+.badge.admin {
+    background: #e8efff;
+    color: #2b4ee9;
+}
+
+.badge.moderator {
+    background: #fff4db;
+    color: var(--warning);
+}
+
+.badge.user {
+    background: #e4f9ef;
+    color: var(--success);
+}
+
+.chart {
+    height: 220px;
+    border-radius: 16px;
+    background: linear-gradient(120deg, #ffe1e8, #f4f5ff);
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+}
+
+.lot-list {
+    display: grid;
+    gap: 12px;
+}
+
+.lot-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #f8f9fd;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-weight: 700;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: 0.8rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-outline {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: transparent;
+}
+
+.btn-primary {
+    background: var(--dark);
+    color: #fff;
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: #fff;
+}
+
+.card-list {
+    display: grid;
+    gap: 16px;
+}
+
+@media (max-width: 1100px) {
+    body {
+        grid-template-columns: 1fr;
+    }
+
+    aside {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .topbar input {
+        width: 100%;
+    }
+}
