@@ -15,9 +15,27 @@ function default_site_settings(): array
         'logo' => '',
         'brand_name' => 'Artirup',
         'slides' => [
-            ['title' => 'Welcome to Auction House', 'subtitle' => 'Build, sell & collect dijital ürünler.'],
-            ['title' => 'Açık artırma evine hoş geldiniz', 'subtitle' => 'Tek tıkla keşfet, artır ve kazan.'],
-            ['title' => 'Premium koleksiyonlar', 'subtitle' => 'Nadir parçalar için canlı açık artırmalar.'],
+            [
+                'eyebrow' => 'Açık artırma evine hoş geldiniz',
+                'title' => 'Tek tıkla keşfet, artır ve kazan.',
+                'desc' => 'Canlı müzayedeler, güvenli ödeme, anında bildirim ve kişiselleştirilmiş öneriler ile yeni nesil açık artırma deneyimi.',
+                'cta' => 'Keşfetmeye Başla',
+                'image' => 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80',
+            ],
+            [
+                'eyebrow' => 'Premium koleksiyonlar',
+                'title' => 'Nadir parçalar için canlı açık artırmalar.',
+                'desc' => 'Koleksiyon ürünleri, sanat, teknoloji ve daha fazlası için gerçek zamanlı teklif ver.',
+                'cta' => 'Canlı Artırmaları Gör',
+                'image' => 'https://images.unsplash.com/photo-1524502397800-2eeaad7c3fe5?auto=format&fit=crop&w=900&q=80',
+            ],
+            [
+                'eyebrow' => 'Satıcı olmak ister misin?',
+                'title' => 'Ürünlerini listelerken yapay zekadan destek al.',
+                'desc' => 'Akıllı fiyat önerisi, otomatik lot planlama ve raporlarla satışlarını büyüt.',
+                'cta' => 'Satıcı Paneline Git',
+                'image' => 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80',
+            ],
         ],
         'categories' => ['Koleksiyon', 'Sanat', 'Teknoloji', 'Moda'],
         'posts' => [

@@ -32,18 +32,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'add_slide') {
+        $eyebrow = trim($_POST['eyebrow'] ?? '');
         $title = trim($_POST['title'] ?? '');
-        $subtitle = trim($_POST['subtitle'] ?? '');
+        $desc = trim($_POST['desc'] ?? '');
+        $cta = trim($_POST['cta'] ?? '');
+        $image = trim($_POST['image'] ?? '');
+        $slideImageUrl = $image;
+        if (!empty($_FILES['slide_image']['name']) && is_uploaded_file($_FILES['slide_image']['tmp_name'])) {
+            $uploadsDir = __DIR__ . '/../uploads';
+            if (!is_dir($uploadsDir)) {
+                mkdir($uploadsDir, 0755, true);
+            }
+            $extension = pathinfo($_FILES['slide_image']['name'], PATHINFO_EXTENSION);
+            $safeExtension = preg_replace('/[^a-zA-Z0-9]/', '', $extension);
+            $fileName = 'slide_' . time() . ($safeExtension ? '.' . $safeExtension : '');
+            $destination = $uploadsDir . '/' . $fileName;
+            if (move_uploaded_file($_FILES['slide_image']['tmp_name'], $destination)) {
+                $slideImageUrl = url_path('uploads/' . $fileName);
+            }
+        }
         if ($title !== '') {
-            $_SESSION['settings']['slides'][] = ['title' => $title, 'subtitle' => $subtitle];
+            $_SESSION['settings']['slides'][] = [
+                'eyebrow' => $eyebrow,
+                'title' => $title,
+                'desc' => $desc,
+                'cta' => $cta,
+                'image' => $slideImageUrl,
+            ];
             $message = 'Slider eklendi.';
         }
     }
     if ($action === 'update_slide') {
         $index = (int) ($_POST['index'] ?? -1);
         if (isset($_SESSION['settings']['slides'][$index])) {
+            $_SESSION['settings']['slides'][$index]['eyebrow'] = trim($_POST['eyebrow'] ?? $_SESSION['settings']['slides'][$index]['eyebrow']);
             $_SESSION['settings']['slides'][$index]['title'] = trim($_POST['title'] ?? $_SESSION['settings']['slides'][$index]['title']);
-            $_SESSION['settings']['slides'][$index]['subtitle'] = trim($_POST['subtitle'] ?? $_SESSION['settings']['slides'][$index]['subtitle']);
+            $_SESSION['settings']['slides'][$index]['desc'] = trim($_POST['desc'] ?? $_SESSION['settings']['slides'][$index]['desc']);
+            $_SESSION['settings']['slides'][$index]['cta'] = trim($_POST['cta'] ?? $_SESSION['settings']['slides'][$index]['cta']);
+            $image = trim($_POST['image'] ?? $_SESSION['settings']['slides'][$index]['image']);
+            $_SESSION['settings']['slides'][$index]['image'] = $image;
+            if (!empty($_FILES['slide_image']['name']) && is_uploaded_file($_FILES['slide_image']['tmp_name'])) {
+                $uploadsDir = __DIR__ . '/../uploads';
+                if (!is_dir($uploadsDir)) {
+                    mkdir($uploadsDir, 0755, true);
+                }
+                $extension = pathinfo($_FILES['slide_image']['name'], PATHINFO_EXTENSION);
+                $safeExtension = preg_replace('/[^a-zA-Z0-9]/', '', $extension);
+                $fileName = 'slide_' . time() . ($safeExtension ? '.' . $safeExtension : '');
+                $destination = $uploadsDir . '/' . $fileName;
+                if (move_uploaded_file($_FILES['slide_image']['tmp_name'], $destination)) {
+                    $_SESSION['settings']['slides'][$index]['image'] = url_path('uploads/' . $fileName);
+                }
+            }
             $message = 'Slider güncellendi.';
         }
     }
@@ -233,8 +273,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <table>
             <thead>
                 <tr>
+                    <th>Üst Başlık</th>
                     <th>Başlık</th>
-                    <th>Alt Başlık</th>
+                    <th>Açıklama</th>
+                    <th>CTA</th>
+                    <th>Görsel</th>
                     <th>İşlem</th>
                 </tr>
             </thead>
@@ -242,13 +285,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php foreach ($_SESSION['settings']['slides'] as $index => $slide): ?>
                     <tr>
                         <td>
-                            <form class="form" method="post">
+                            <form class="form" method="post" enctype="multipart/form-data">
                                 <input type="hidden" name="action" value="update_slide" />
                                 <input type="hidden" name="index" value="<?php echo $index; ?>" />
+                                <input type="text" name="eyebrow" value="<?php echo htmlspecialchars($slide['eyebrow'] ?? ''); ?>" />
+                        </td>
+                        <td>
                                 <input type="text" name="title" value="<?php echo htmlspecialchars($slide['title']); ?>" />
                         </td>
                         <td>
-                                <input type="text" name="subtitle" value="<?php echo htmlspecialchars($slide['subtitle']); ?>" />
+                                <textarea name="desc" rows="2"><?php echo htmlspecialchars($slide['desc'] ?? ''); ?></textarea>
+                        </td>
+                        <td>
+                                <input type="text" name="cta" value="<?php echo htmlspecialchars($slide['cta'] ?? ''); ?>" />
+                        </td>
+                        <td>
+                                <?php if (!empty($slide['image'])): ?>
+                                    <img src="<?php echo htmlspecialchars($slide['image']); ?>" alt="Slider görseli" style="height: 48px; display: block; margin-bottom: 8px;" />
+                                <?php endif; ?>
+                                <input type="text" name="image" placeholder="Görsel URL" value="<?php echo htmlspecialchars($slide['image'] ?? ''); ?>" />
+                                <input type="file" name="slide_image" accept="image/*" />
                         </td>
                         <td class="actions">
                                 <button class="btn btn-outline" type="submit">Düzenle</button>
@@ -264,10 +320,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </tbody>
         </table>
         <div style="margin-top: 12px;">
-            <form class="form" method="post">
+            <form class="form" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="add_slide" />
+                <input type="text" name="eyebrow" placeholder="Üst başlık" />
                 <input type="text" name="title" placeholder="Başlık" />
-                <input type="text" name="subtitle" placeholder="Alt başlık" />
+                <textarea name="desc" rows="2" placeholder="Açıklama"></textarea>
+                <input type="text" name="cta" placeholder="CTA metni (örn: Hemen Başla)" />
+                <input type="text" name="image" placeholder="Görsel URL" />
+                <input type="file" name="slide_image" accept="image/*" />
                 <button class="btn btn-primary" type="submit">Yeni slider ekle</button>
             </form>
         </div>

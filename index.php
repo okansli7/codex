@@ -1,28 +1,17 @@
 <?php
 require_once __DIR__ . '/config.php';
-$slides = [
-    [
-        'eyebrow' => 'Açık artırma evine hoş geldiniz',
-        'title' => 'Tek tıkla keşfet, artır ve kazan.',
-        'desc' => 'Canlı müzayedeler, güvenli ödeme, anında bildirim ve kişiselleştirilmiş öneriler ile yeni nesil açık artırma deneyimi.',
-        'cta' => 'Keşfetmeye Başla',
-        'image' => 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80',
+$slides = $_SESSION['settings']['slides'] ?? default_site_settings()['slides'];
+$defaultSlideImage = 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80';
+$slides = array_map(
+    fn(array $slide) => [
+        'eyebrow' => $slide['eyebrow'] ?? 'Açık artırma',
+        'title' => $slide['title'] ?? 'Yeni açık artırma',
+        'desc' => $slide['desc'] ?? '',
+        'cta' => $slide['cta'] ?? 'Detayları Gör',
+        'image' => ($slide['image'] ?? '') !== '' ? $slide['image'] : $defaultSlideImage,
     ],
-    [
-        'eyebrow' => 'Premium koleksiyonlar',
-        'title' => 'Nadir parçalar için canlı açık artırmalar.',
-        'desc' => 'Koleksiyon ürünleri, sanat, teknoloji ve daha fazlası için gerçek zamanlı teklif ver.',
-        'cta' => 'Canlı Artırmaları Gör',
-        'image' => 'https://images.unsplash.com/photo-1524502397800-2eeaad7c3fe5?auto=format&fit=crop&w=900&q=80',
-    ],
-    [
-        'eyebrow' => 'Satıcı olmak ister misin?',
-        'title' => 'Ürünlerini listelerken yapay zekadan destek al.',
-        'desc' => 'Akıllı fiyat önerisi, otomatik lot planlama ve raporlarla satışlarını büyüt.',
-        'cta' => 'Satıcı Paneline Git',
-        'image' => 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80',
-    ],
-];
+    $slides
+);
 
 $liveAuctions = [
     [
