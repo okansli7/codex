@@ -19,7 +19,7 @@ $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-154472379
 <body>
 <header>
     <div class="nav">
-        <div class="logo"><span class="logo-badge">A</span>Artirup</div>
+        <?php echo render_site_logo(); ?>
         <nav>
             <ul>
                 <li><a href="<?php echo url_path('index.php'); ?>">Anasayfa</a></li>

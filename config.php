@@ -9,6 +9,37 @@ if (session_status() === PHP_SESSION_NONE) {
     ]);
 }
 
+function default_site_settings(): array
+{
+    return [
+        'logo' => '',
+        'brand_name' => 'Artirup',
+        'slides' => [
+            ['title' => 'Welcome to Auction House', 'subtitle' => 'Build, sell & collect dijital ürünler.'],
+            ['title' => 'Açık artırma evine hoş geldiniz', 'subtitle' => 'Tek tıkla keşfet, artır ve kazan.'],
+            ['title' => 'Premium koleksiyonlar', 'subtitle' => 'Nadir parçalar için canlı açık artırmalar.'],
+        ],
+        'categories' => ['Koleksiyon', 'Sanat', 'Teknoloji', 'Moda'],
+        'posts' => [
+            ['title' => 'Yeni açık artırma trendleri', 'image' => 'Blog görseli'],
+            ['title' => 'Satıcılar için ipuçları', 'image' => 'Blog görseli'],
+        ],
+        'faqs' => [
+            ['q' => 'Teklif nasıl verilir?', 'a' => 'Lot detayından teklif tutarını girerek.'],
+            ['q' => 'Ödeme nasıl yapılır?', 'a' => 'Kazanan teklif sonrası escrow ile.'],
+        ],
+        'auctions' => [
+            ['title' => 'Retro Teknoloji Lotları', 'image' => 'Teknoloji görseli', 'status' => 'Yayında'],
+            ['title' => 'Sanat & Koleksiyon', 'image' => 'Sanat görseli', 'status' => 'Onay Bekliyor'],
+            ['title' => 'Otomotiv Özel Lot', 'image' => 'Otomotiv görseli', 'status' => 'Yayında'],
+        ],
+    ];
+}
+
+if (!isset($_SESSION['settings'])) {
+    $_SESSION['settings'] = default_site_settings();
+}
+
 if (!isset($_SESSION['products'])) {
     $_SESSION['products'] = [
         [
@@ -87,6 +118,30 @@ function url_path(string $path): string
 {
     global $basePath;
     return ($basePath === '' ? '' : $basePath) . '/' . ltrim($path, '/');
+}
+
+function site_brand_name(): string
+{
+    return $_SESSION['settings']['brand_name'] ?? 'Artirup';
+}
+
+function site_logo_url(): string
+{
+    return $_SESSION['settings']['logo'] ?? '';
+}
+
+function render_site_logo(): string
+{
+    $brand = site_brand_name();
+    $logo = site_logo_url();
+    $brandEscaped = htmlspecialchars($brand, ENT_QUOTES, 'UTF-8');
+    if ($logo !== '') {
+        $logoEscaped = htmlspecialchars($logo, ENT_QUOTES, 'UTF-8');
+        return '<div class="logo"><img src="' . $logoEscaped . '" alt="' . $brandEscaped . '" /></div>';
+    }
+    $badgeChar = function_exists('mb_substr') ? mb_substr($brand, 0, 1, 'UTF-8') : substr($brand, 0, 1);
+    $badgeEscaped = htmlspecialchars($badgeChar, ENT_QUOTES, 'UTF-8');
+    return '<div class="logo"><span class="logo-badge">' . $badgeEscaped . '</span>' . $brandEscaped . '</div>';
 }
 
 function current_user(): ?array

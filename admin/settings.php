@@ -7,28 +7,7 @@ if (!is_admin()) {
 $message = '';
 
 if (!isset($_SESSION['settings'])) {
-    $_SESSION['settings'] = [
-        'logo' => '',
-        'slides' => [
-            ['title' => 'Welcome to Auction House', 'subtitle' => 'Build, sell & collect dijital ürünler.'],
-            ['title' => 'Açık artırma evine hoş geldiniz', 'subtitle' => 'Tek tıkla keşfet, artır ve kazan.'],
-            ['title' => 'Premium koleksiyonlar', 'subtitle' => 'Nadir parçalar için canlı açık artırmalar.'],
-        ],
-        'categories' => ['Koleksiyon', 'Sanat', 'Teknoloji', 'Moda'],
-        'posts' => [
-            ['title' => 'Yeni açık artırma trendleri', 'image' => 'Blog görseli'],
-            ['title' => 'Satıcılar için ipuçları', 'image' => 'Blog görseli'],
-        ],
-        'faqs' => [
-            ['q' => 'Teklif nasıl verilir?', 'a' => 'Lot detayından teklif tutarını girerek.'],
-            ['q' => 'Ödeme nasıl yapılır?', 'a' => 'Kazanan teklif sonrası escrow ile.'],
-        ],
-        'auctions' => [
-            ['title' => 'Retro Teknoloji Lotları', 'image' => 'Teknoloji görseli', 'status' => 'Yayında'],
-            ['title' => 'Sanat & Koleksiyon', 'image' => 'Sanat görseli', 'status' => 'Onay Bekliyor'],
-            ['title' => 'Otomotiv Özel Lot', 'image' => 'Otomotiv görseli', 'status' => 'Yayında'],
-        ],
-    ];
+    $_SESSION['settings'] = default_site_settings();
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
