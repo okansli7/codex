@@ -164,9 +164,11 @@ $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-154472379
         }
 
         .logo img {
-            height: 40px;
+            height: 52px;
             width: auto;
             display: block;
+            max-width: 220px;
+            object-fit: contain;
         }
 
         nav ul {
