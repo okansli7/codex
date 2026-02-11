@@ -51,11 +51,20 @@ function default_site_settings(): array
             ['title' => 'Sanat & Koleksiyon', 'image' => 'Sanat görseli', 'status' => 'Onay Bekliyor'],
             ['title' => 'Otomotiv Özel Lot', 'image' => 'Otomotiv görseli', 'status' => 'Yayında'],
         ],
+        'payment_methods' => [
+            'credit_card' => ['enabled' => true, 'label' => 'Kredi / Banka Kartı'],
+            'bank_transfer' => ['enabled' => true, 'label' => 'Havale / EFT'],
+            'cash_on_delivery' => ['enabled' => false, 'label' => 'Kapıda Ödeme'],
+            'paypal' => ['enabled' => false, 'label' => 'PayPal'],
+        ],
+        'bank_transfer_iban' => 'TR00 0000 0000 0000 0000 0000 00',
     ];
 }
 
 if (!isset($_SESSION['settings'])) {
     $_SESSION['settings'] = default_site_settings();
+} else {
+    $_SESSION['settings'] = array_replace_recursive(default_site_settings(), $_SESSION['settings']);
 }
 
 if (!isset($_SESSION['products'])) {
@@ -207,6 +216,56 @@ function user_dashboard_label(array $user): string
         return 'Satıcı Paneli';
     }
     return 'Profilim';
+}
+
+if (!isset($_SESSION['cart'])) {
+    $_SESSION['cart'] = [];
+}
+
+function cart_count(): int
+{
+    return array_sum(array_map(fn(array $item) => (int) ($item['qty'] ?? 0), $_SESSION['cart'] ?? []));
+}
+
+function cart_items(): array
+{
+    $items = [];
+    foreach (($_SESSION['cart'] ?? []) as $productId => $entry) {
+        foreach (($_SESSION['products'] ?? []) as $product) {
+            if (($product['id'] ?? null) === (int) $productId) {
+                $qty = max(1, (int) ($entry['qty'] ?? 1));
+                $items[] = [
+                    'product' => $product,
+                    'qty' => $qty,
+                    'subtotal' => $qty * (int) ($product['price'] ?? 0),
+                ];
+                break;
+            }
+        }
+    }
+    return $items;
+}
+
+function cart_total(): int
+{
+    return array_sum(array_map(fn(array $item) => (int) $item['subtotal'], cart_items()));
+}
+
+function add_to_cart(int $productId, int $qty = 1): void
+{
+    if ($qty < 1) {
+        $qty = 1;
+    }
+    if (!isset($_SESSION['cart'][$productId])) {
+        $_SESSION['cart'][$productId] = ['qty' => 0];
+    }
+    $_SESSION['cart'][$productId]['qty'] += $qty;
+}
+
+function enabled_payment_methods(): array
+{
+    $methods = $_SESSION['settings']['payment_methods'] ?? [];
+    return array_filter($methods, fn(array $method) => !empty($method['enabled']));
 }
 
 function country_options(): array

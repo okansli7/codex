@@ -543,6 +543,7 @@ $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-154472379
                 <li><a href="<?php echo url_path('pages/auctions.php'); ?>">Açık Artırmalar</a></li>
                 <li><a href="<?php echo url_path('pages/stores.php'); ?>">Mağazalar</a></li>
                 <li><a href="<?php echo url_path('pages/blog.php'); ?>">Blog</a></li>
+                <li><a href="<?php echo url_path('pages/cart.php'); ?>">Sepet (<?php echo cart_count(); ?>)</a></li>
                 <li><a href="<?php echo url_path('pages/contact.php'); ?>">İletişim</a></li>
             </ul>
         </nav>

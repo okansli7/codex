@@ -56,6 +56,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    if ($action === 'add_to_cart') {
+        $productId = (int) ($_POST['product_id'] ?? 0);
+        $qty = (int) ($_POST['qty'] ?? 1);
+        if ($productId > 0) {
+            add_to_cart($productId, $qty);
+            $message = 'Ürün sepete eklendi.';
+        }
+    }
+
     if ($action === 'add_comment') {
         if (!$currentUser) {
             $error = 'Yorum yazmak için kayıt olmalısın.';
@@ -94,6 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <li><a href="<?php echo url_path('pages/about.php'); ?>">Hakkımızda</a></li>
                 <li><a href="<?php echo url_path('pages/stores.php'); ?>">Mağazalar</a></li>
                 <li><a href="<?php echo url_path('pages/blog.php'); ?>">Blog</a></li>
+                <li><a href="<?php echo url_path('pages/cart.php'); ?>">Sepet (<?php echo cart_count(); ?>)</a></li>
                 <li><a href="<?php echo url_path('pages/contact.php'); ?>">İletişim</a></li>
             </ul>
         </nav>
@@ -150,6 +160,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <p>Bitiş: <?php echo $product['end']; ?> • <?php echo $product['lots']; ?> lot</p>
                     <p>Başlangıç: ₺<?php echo number_format($product['price']); ?></p>
                     <a class="btn btn-outline" href="<?php echo url_path('pages/product.php'); ?>?id=<?php echo $product['id']; ?>">Ürünü Gör</a>
+                    <form class="form" method="post">
+                        <input type="hidden" name="action" value="add_to_cart" />
+                        <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>" />
+                        <input type="number" name="qty" min="1" value="1" />
+                        <button class="btn btn-primary" type="submit">Sepete Ekle</button>
+                    </form>
                     <form class="form" method="post">
                         <input type="hidden" name="action" value="bid" />
                         <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>" />

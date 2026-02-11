@@ -21,6 +21,11 @@ if (!$product) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $product) {
     $action = $_POST['action'] ?? '';
+    if ($action === 'add_to_cart') {
+        $qty = (int) ($_POST['qty'] ?? 1);
+        add_to_cart((int) $product['id'], $qty);
+        $message = 'Ürün sepete eklendi.';
+    }
     if ($action === 'bid') {
         $amount = (int) ($_POST['amount'] ?? 0);
         if ($amount > 0) {
@@ -64,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $product) {
             <ul>
                 <li><a href="<?php echo url_path('index.php'); ?>">Anasayfa</a></li>
                 <li><a href="<?php echo url_path('pages/auctions.php'); ?>">Açık Artırmalar</a></li>
+                <li><a href="<?php echo url_path('pages/cart.php'); ?>">Sepet (<?php echo cart_count(); ?>)</a></li>
                 <li><a href="<?php echo url_path('pages/contact.php'); ?>">İletişim</a></li>
             </ul>
         </nav>
@@ -112,6 +118,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $product) {
                 </div>
                 <div class="card">
                     <h3>Teklif Ver</h3>
+                    <form class="form" method="post" style="margin-bottom: 12px;">
+                        <input type="hidden" name="action" value="add_to_cart" />
+                        <input type="number" name="qty" min="1" value="1" />
+                        <button class="btn btn-primary" type="submit">Sepete Ekle</button>
+                    </form>
                     <form class="form" method="post">
                         <input type="hidden" name="action" value="bid" />
                         <input type="number" name="amount" min="1" placeholder="Teklif tutarı (₺)" required />

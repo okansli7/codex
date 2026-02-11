@@ -200,6 +200,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Ana sayfa açık artırması silindi.';
         }
     }
+
+    if ($action === 'update_payment_methods') {
+        $configuredMethods = $_SESSION['settings']['payment_methods'] ?? [];
+        foreach ($configuredMethods as $key => $method) {
+            $_SESSION['settings']['payment_methods'][$key]['enabled'] = isset($_POST['payment_methods'][$key]);
+            $label = trim($_POST['payment_labels'][$key] ?? ($method['label'] ?? 'Ödeme yöntemi'));
+            $_SESSION['settings']['payment_methods'][$key]['label'] = $label !== '' ? $label : ($method['label'] ?? 'Ödeme yöntemi');
+        }
+        $_SESSION['settings']['bank_transfer_iban'] = trim($_POST['bank_transfer_iban'] ?? ($_SESSION['settings']['bank_transfer_iban'] ?? ''));
+        $message = 'Ödeme yöntemleri güncellendi.';
+    }
 }
 ?>
 <!doctype html>
@@ -527,6 +538,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="panel" style="margin-top: 24px;">
+        <h3>Sepet & Ödeme Yöntemleri</h3>
+        <form class="form" method="post">
+            <input type="hidden" name="action" value="update_payment_methods" />
+            <?php foreach (($_SESSION['settings']['payment_methods'] ?? []) as $methodKey => $method): ?>
+                <div class="lot-item" style="margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" name="payment_methods[<?php echo $methodKey; ?>]" <?php echo !empty($method['enabled']) ? 'checked' : ''; ?> />
+                        <strong><?php echo htmlspecialchars($methodKey); ?></strong>
+                    </div>
+                    <input type="text" name="payment_labels[<?php echo $methodKey; ?>]" value="<?php echo htmlspecialchars($method['label'] ?? ''); ?>" placeholder="Görünen ödeme yöntemi adı" />
+                </div>
+            <?php endforeach; ?>
+            <input type="text" name="bank_transfer_iban" value="<?php echo htmlspecialchars($_SESSION['settings']['bank_transfer_iban'] ?? ''); ?>" placeholder="Havale/EFT IBAN" />
+            <button class="btn btn-primary" type="submit">Ödeme ayarlarını kaydet</button>
+        </form>
     </div>
 </main>
 </body>
