@@ -213,6 +213,35 @@ nav a {
     color: #fff;
 }
 
+.cart-pill {
+    gap: 8px;
+}
+
+.cart-count {
+    min-width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+}
+
+.auction-thumb {
+    width: 100%;
+    height: 190px;
+    object-fit: cover;
+    border-radius: 16px;
+    margin-bottom: 12px;
+}
+
+.muted {
+    color: var(--text);
+}
+
 .container {
     padding: 40px 8vw 70px;
 }

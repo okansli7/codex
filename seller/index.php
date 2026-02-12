@@ -1,9 +1,80 @@
 <?php
 require_once __DIR__ . '/../config.php';
 $currentUser = current_user();
-$dashboardLink = $currentUser ? user_dashboard_link($currentUser) : '';
-$dashboardLabel = $currentUser ? user_dashboard_label($currentUser) : '';
+if (!$currentUser) {
+    header('Location: ' . url_path('auth/login.php'));
+    exit;
+}
+$dashboardLink = user_dashboard_link($currentUser);
+$dashboardLabel = user_dashboard_label($currentUser);
 $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=facearea&w=120&h=120&q=80';
+$message = '';
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+
+    if ($action === 'add_product') {
+        $title = trim($_POST['title'] ?? '');
+        $price = max(1, (int) ($_POST['price'] ?? 0));
+        $lots = max(1, (int) ($_POST['lots'] ?? 1));
+        $status = trim($_POST['status'] ?? 'Yayında');
+        $image = trim($_POST['image'] ?? '');
+        $endAtInput = trim($_POST['end_at'] ?? '');
+        $endAt = $endAtInput !== '' ? date('Y-m-d H:i:s', strtotime($endAtInput)) : date('Y-m-d H:i:s', strtotime('+7 days'));
+
+        if ($title !== '' && $price > 0) {
+            $ids = array_column($_SESSION['products'], 'id');
+            $nextId = $ids ? max($ids) + 1 : 1;
+            $_SESSION['products'][] = [
+                'id' => $nextId,
+                'title' => $title,
+                'seller' => $currentUser['name'] ?? 'Satıcı',
+                'status' => $status,
+                'lots' => $lots,
+                'end_at' => $endAt,
+                'price' => $price,
+                'image' => $image !== '' ? $image : 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80',
+            ];
+            $message = 'Ürün eklendi.';
+        } else {
+            $error = 'Başlık ve fiyat zorunludur.';
+        }
+    }
+
+    if ($action === 'edit_product') {
+        $productId = (int) ($_POST['product_id'] ?? 0);
+        foreach ($_SESSION['products'] as &$product) {
+            if (($product['id'] ?? 0) === $productId && ($product['seller'] ?? '') === ($currentUser['name'] ?? '')) {
+                $product['title'] = trim($_POST['title'] ?? $product['title']);
+                $product['price'] = max(1, (int) ($_POST['price'] ?? $product['price']));
+                $product['lots'] = max(1, (int) ($_POST['lots'] ?? $product['lots']));
+                $product['status'] = trim($_POST['status'] ?? $product['status']);
+                $product['image'] = trim($_POST['image'] ?? $product['image']);
+                $endAtInput = trim($_POST['end_at'] ?? '');
+                if ($endAtInput !== '') {
+                    $product['end_at'] = date('Y-m-d H:i:s', strtotime($endAtInput));
+                }
+                $message = 'Ürün güncellendi.';
+                break;
+            }
+        }
+        unset($product);
+    }
+
+    if ($action === 'delete_product') {
+        $productId = (int) ($_POST['product_id'] ?? 0);
+        $_SESSION['products'] = array_values(array_filter($_SESSION['products'], function (array $product) use ($productId, $currentUser): bool {
+            if (($product['id'] ?? 0) !== $productId) {
+                return true;
+            }
+            return ($product['seller'] ?? '') !== ($currentUser['name'] ?? '');
+        }));
+        $message = 'Ürün silindi.';
+    }
+}
+
+$sellerProducts = array_values(array_filter($_SESSION['products'], fn(array $product): bool => ($product['seller'] ?? '') === ($currentUser['name'] ?? '')));
 ?>
 <!doctype html>
 <html lang="tr">
@@ -20,6 +91,11 @@ $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-154472379
 <header>
     <div class="nav">
         <?php echo render_site_logo(); ?>
+        <div class="nav-search">
+            <form method="get" action="<?php echo url_path('pages/auctions.php'); ?>">
+                <input class="nav-search-input" type="search" name="q" placeholder="Ürün, satıcı veya kategori ara..." />
+            </form>
+        </div>
         <nav>
             <ul>
                 <li><a href="<?php echo url_path('index.php'); ?>">Anasayfa</a></li>
@@ -29,60 +105,78 @@ $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-154472379
             </ul>
         </nav>
         <div class="nav-actions">
-            <?php if ($currentUser): ?>
-                <div class="profile-menu">
-                    <div class="profile-trigger">
-                        <img class="profile-avatar" src="<?php echo htmlspecialchars($avatar); ?>" alt="Profil" />
-                        <span class="profile-name"><?php echo htmlspecialchars($currentUser['name'] ?? 'Profilim'); ?></span>
-                    </div>
-                    <div class="profile-dropdown">
-                        <a href="<?php echo url_path('profile.php'); ?>">Profilim</a>
-                        <a href="<?php echo $dashboardLink; ?>"><?php echo $dashboardLabel; ?></a>
-                        <a href="<?php echo url_path('auth/logout.php'); ?>">Çıkış Yap</a>
-                    </div>
+            <a class="btn btn-outline cart-pill" href="<?php echo url_path('pages/cart.php'); ?>">Sepet <span class="cart-count"><?php echo cart_count() > 0 ? cart_count() : '•'; ?></span></a>
+            <div class="profile-menu">
+                <div class="profile-trigger">
+                    <img class="profile-avatar" src="<?php echo htmlspecialchars($avatar); ?>" alt="Profil" />
+                    <span class="profile-name"><?php echo htmlspecialchars($currentUser['name'] ?? 'Profilim'); ?></span>
                 </div>
-            <?php else: ?>
-                <a class="btn btn-outline" href="<?php echo url_path('auth/login.php'); ?>">Giriş Yap</a>
-                <a class="btn btn-primary" href="<?php echo url_path('auth/register.php'); ?>">Kayıt Ol</a>
-            <?php endif; ?>
+                <div class="profile-dropdown">
+                    <a href="<?php echo url_path('profile.php'); ?>">Profilim</a>
+                    <a href="<?php echo $dashboardLink; ?>"><?php echo $dashboardLabel; ?></a>
+                    <a href="<?php echo url_path('auth/logout.php'); ?>">Çıkış Yap</a>
+                </div>
+            </div>
         </div>
     </div>
 </header>
 
 <section class="container">
     <div class="card">
-        <h1>Satıcı Paneli</h1>
-        <p>Lot oluşturma, fiyatlandırma önerileri, satış raporları ve en fazla teklif veren kullanıcılar burada.</p>
-        <div class="grid">
-            <div class="card">
-                <h3>Toplam satış</h3>
-                <p>₺128.400 • 32 lot satıldı</p>
-            </div>
-            <div class="card">
-                <h3>Popüler açık artırma</h3>
-                <p>Retro Teknoloji Lotları • 58 teklif</p>
-            </div>
-            <div class="card">
-                <h3>En fazla teklif veren</h3>
-                <p>Elif Demir • 18 teklif</p>
-            </div>
+        <h1>Satıcı Ürün Yönetimi</h1>
+        <p>Ürün fotoğrafı, fiyat, lot adedi, müzayede bitiş tarihi ve durum alanlarını buradan düzenleyebilirsiniz.</p>
+
+        <?php if ($message): ?>
+            <div class="card" style="background:#e4f9ef;color:#1f9d62;margin-bottom:16px;"><?php echo htmlspecialchars($message); ?></div>
+        <?php endif; ?>
+        <?php if ($error): ?>
+            <div class="card" style="background:#ffe1e6;color:#b3283b;margin-bottom:16px;"><?php echo htmlspecialchars($error); ?></div>
+        <?php endif; ?>
+
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>Yeni Ürün Ekle</h3>
+            <form class="form" method="post">
+                <input type="hidden" name="action" value="add_product" />
+                <input type="text" name="title" placeholder="Ürün başlığı" required />
+                <input type="number" name="price" min="1" placeholder="Başlangıç fiyatı" required />
+                <input type="number" name="lots" min="1" value="1" placeholder="Lot sayısı" required />
+                <input type="url" name="image" placeholder="Ürün görsel URL" />
+                <input type="text" name="status" value="Yayında" placeholder="Durum" />
+                <label class="muted">Müzayede bitiş tarihi</label>
+                <input type="datetime-local" name="end_at" />
+                <button class="btn btn-primary" type="submit">Ürünü ekle</button>
+            </form>
         </div>
-        <div class="grid" style="margin-top: 20px;">
-            <div class="card">
-                <h3>Yeni lot oluştur</h3>
-                <p>Ürün bilgilerini ekle, otomatik fiyat önerisi al.</p>
-                <a class="btn btn-outline" href="#">Lot oluştur</a>
-            </div>
-            <div class="card">
-                <h3>Aktif müzayedeler</h3>
-                <p>Devam eden açık artırmalarını izle.</p>
-                <a class="btn btn-outline" href="#">Müzayedeleri gör</a>
-            </div>
-            <div class="card">
-                <h3>Raporlar</h3>
-                <p>Satış performansı ve teklif geçmişi raporları.</p>
-                <a class="btn btn-outline" href="#">Rapor indir</a>
-            </div>
+
+        <div class="grid">
+            <?php foreach ($sellerProducts as $product): ?>
+                <div class="card">
+                    <img class="auction-thumb" src="<?php echo htmlspecialchars($product['image'] ?? ''); ?>" alt="<?php echo htmlspecialchars($product['title']); ?>" />
+                    <h3><?php echo htmlspecialchars($product['title']); ?></h3>
+                    <p>Kalan süre: <strong><?php echo product_countdown_label($product); ?></strong></p>
+                    <p>Bitiş: <?php echo htmlspecialchars(product_deadline_label($product)); ?></p>
+                    <form class="form" method="post">
+                        <input type="hidden" name="action" value="edit_product" />
+                        <input type="hidden" name="product_id" value="<?php echo (int) $product['id']; ?>" />
+                        <input type="text" name="title" value="<?php echo htmlspecialchars($product['title']); ?>" />
+                        <input type="number" name="price" min="1" value="<?php echo (int) $product['price']; ?>" />
+                        <input type="number" name="lots" min="1" value="<?php echo (int) $product['lots']; ?>" />
+                        <input type="text" name="status" value="<?php echo htmlspecialchars($product['status']); ?>" />
+                        <input type="url" name="image" value="<?php echo htmlspecialchars($product['image'] ?? ''); ?>" />
+                        <input type="datetime-local" name="end_at" value="<?php echo date('Y-m-d\TH:i', product_end_at($product)); ?>" />
+                        <div class="actions">
+                            <button class="btn btn-outline" type="submit">Düzenle</button>
+                            <button class="btn btn-danger" type="submit" name="action" value="delete_product">Sil</button>
+                        </div>
+                    </form>
+                </div>
+            <?php endforeach; ?>
+            <?php if (empty($sellerProducts)): ?>
+                <div class="card">
+                    <h3>Henüz ürününüz yok</h3>
+                    <p>Yukarıdaki formu kullanarak ürün ekleyebilirsiniz.</p>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </section>

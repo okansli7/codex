@@ -75,8 +75,9 @@ if (!isset($_SESSION['products'])) {
             'seller' => 'Nova Tech',
             'status' => 'Yayında',
             'lots' => 42,
-            'end' => '12 Mar 21:00',
+            'end_at' => date('Y-m-d H:i:s', strtotime('+3 days +4 hours')),
             'price' => 1250,
+            'image' => 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80',
         ],
         [
             'id' => 2,
@@ -84,8 +85,9 @@ if (!isset($_SESSION['products'])) {
             'seller' => 'Studio 55',
             'status' => 'Onay Bekliyor',
             'lots' => 18,
-            'end' => '13 Mar 20:15',
+            'end_at' => date('Y-m-d H:i:s', strtotime('+5 days +2 hours')),
             'price' => 980,
+            'image' => 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=900&q=80',
         ],
         [
             'id' => 3,
@@ -93,11 +95,22 @@ if (!isset($_SESSION['products'])) {
             'seller' => 'DriveX',
             'status' => 'Yayında',
             'lots' => 8,
-            'end' => '14 Mar 18:00',
+            'end_at' => date('Y-m-d H:i:s', strtotime('+1 days +9 hours')),
             'price' => 1850,
+            'image' => 'https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=900&q=80',
         ],
     ];
 }
+
+foreach ($_SESSION['products'] as &$product) {
+    if (!isset($product['end_at']) && isset($product['end'])) {
+        $product['end_at'] = date('Y-m-d H:i:s', strtotime('+2 days'));
+    }
+    if (!isset($product['image'])) {
+        $product['image'] = 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80';
+    }
+}
+unset($product);
 
 if (!isset($_SESSION['comments'])) {
     $_SESSION['comments'] = [
@@ -260,6 +273,33 @@ function add_to_cart(int $productId, int $qty = 1): void
         $_SESSION['cart'][$productId] = ['qty' => 0];
     }
     $_SESSION['cart'][$productId]['qty'] += $qty;
+}
+
+function product_end_at(array $product): int
+{
+    $raw = $product['end_at'] ?? '';
+    $timestamp = strtotime((string) $raw);
+    if ($timestamp === false) {
+        return time();
+    }
+    return $timestamp;
+}
+
+function product_deadline_label(array $product): string
+{
+    return date('d M Y H:i', product_end_at($product));
+}
+
+function product_countdown_label(array $product): string
+{
+    $remaining = product_end_at($product) - time();
+    if ($remaining <= 0) {
+        return 'Süre doldu';
+    }
+    $days = intdiv($remaining, 86400);
+    $hours = intdiv($remaining % 86400, 3600);
+    $minutes = intdiv($remaining % 3600, 60);
+    return sprintf('%d gün %02d saat %02d dk', $days, $hours, $minutes);
 }
 
 function enabled_payment_methods(): array

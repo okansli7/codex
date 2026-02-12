@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $product) {
             </ul>
         </nav>
         <div class="nav-actions">
-            <a class="btn btn-outline" href="<?php echo url_path('pages/cart.php'); ?>">Sepet (<?php echo cart_count(); ?>)</a>
+            <a class="btn btn-outline cart-pill" href="<?php echo url_path('pages/cart.php'); ?>">Sepet <span class="cart-count"><?php echo cart_count() > 0 ? cart_count() : '•'; ?></span></a>
             <?php if ($currentUser): ?>
                 <div class="profile-menu">
                     <div class="profile-trigger">
@@ -115,11 +115,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $product) {
         <?php if ($product): ?>
             <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
                 <div class="card">
+                    <img class="auction-thumb" src="<?php echo htmlspecialchars($product['image'] ?? ''); ?>" alt="<?php echo htmlspecialchars($product['title']); ?>" />
                     <h2><?php echo htmlspecialchars($product['title']); ?></h2>
                     <p><strong>Satıcı:</strong> <?php echo htmlspecialchars($product['seller']); ?></p>
                     <p><strong>Durum:</strong> <?php echo htmlspecialchars($product['status']); ?></p>
                     <p><strong>Lot:</strong> <?php echo htmlspecialchars($product['lots']); ?></p>
-                    <p><strong>Bitiş:</strong> <?php echo htmlspecialchars($product['end']); ?></p>
+                    <p><strong>Bitiş:</strong> <?php echo htmlspecialchars(product_deadline_label($product)); ?></p>
+                    <p><strong>Kalan:</strong> <?php echo htmlspecialchars(product_countdown_label($product)); ?></p>
                 </div>
                 <div class="card">
                     <h3>Teklif Ver</h3>

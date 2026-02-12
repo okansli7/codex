@@ -58,7 +58,7 @@ $total = cart_total();
             </ul>
         </nav>
         <div class="nav-actions">
-            <a class="btn btn-outline" href="<?php echo url_path('pages/cart.php'); ?>">Sepet (<?php echo cart_count(); ?>)</a>
+            <a class="btn btn-outline cart-pill" href="<?php echo url_path('pages/cart.php'); ?>">Sepet <span class="cart-count"><?php echo cart_count() > 0 ? cart_count() : '•'; ?></span></a>
             <?php if ($currentUser): ?>
                 <div class="profile-menu">
                     <div class="profile-trigger">
@@ -106,7 +106,7 @@ $total = cart_total();
                     <?php foreach ($cartItems as $item): ?>
                         <?php $product = $item['product']; ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($product['title']); ?></td>
+                            <td style="display:flex;align-items:center;gap:10px;"><img src="<?php echo htmlspecialchars($product['image'] ?? ''); ?>" alt="<?php echo htmlspecialchars($product['title']); ?>" style="width:56px;height:56px;object-fit:cover;border-radius:10px;" /> <span><?php echo htmlspecialchars($product['title']); ?></span></td>
                             <td>₺<?php echo number_format((int) $product['price']); ?></td>
                             <td>
                                 <form class="form" method="post">
