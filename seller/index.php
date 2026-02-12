@@ -1,15 +1,77 @@
 <?php
 require_once __DIR__ . '/../config.php';
+
 $currentUser = current_user();
 if (!$currentUser) {
     header('Location: ' . url_path('auth/login.php'));
     exit;
 }
+
+if (!is_seller() && !is_admin()) {
+    header('Location: ' . url_path('profile.php'));
+    exit;
+}
+
 $dashboardLink = user_dashboard_link($currentUser);
 $dashboardLabel = user_dashboard_label($currentUser);
 $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=facearea&w=120&h=120&q=80';
 $message = '';
 $error = '';
+
+function uploaded_image_urls(string $field, bool $multiple = false): array
+{
+    if (!isset($_FILES[$field])) {
+        return [];
+    }
+
+    $uploadsDir = __DIR__ . '/../uploads';
+    if (!is_dir($uploadsDir)) {
+        mkdir($uploadsDir, 0755, true);
+    }
+
+    $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    $urls = [];
+
+    if ($multiple) {
+        $names = $_FILES[$field]['name'] ?? [];
+        $tmpNames = $_FILES[$field]['tmp_name'] ?? [];
+        $errors = $_FILES[$field]['error'] ?? [];
+
+        foreach ($names as $index => $name) {
+            if (($errors[$index] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                continue;
+            }
+            $ext = strtolower(pathinfo((string) $name, PATHINFO_EXTENSION));
+            if (!in_array($ext, $allowed, true)) {
+                continue;
+            }
+            $fileName = uniqid('product_gallery_', true) . '.' . $ext;
+            $destination = $uploadsDir . '/' . $fileName;
+            if (move_uploaded_file((string) ($tmpNames[$index] ?? ''), $destination)) {
+                $urls[] = url_path('uploads/' . $fileName);
+            }
+        }
+
+        return $urls;
+    }
+
+    if (($_FILES[$field]['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        return [];
+    }
+
+    $ext = strtolower(pathinfo((string) ($_FILES[$field]['name'] ?? ''), PATHINFO_EXTENSION));
+    if (!in_array($ext, $allowed, true)) {
+        return [];
+    }
+
+    $fileName = uniqid('product_main_', true) . '.' . $ext;
+    $destination = $uploadsDir . '/' . $fileName;
+    if (move_uploaded_file((string) ($_FILES[$field]['tmp_name'] ?? ''), $destination)) {
+        $urls[] = url_path('uploads/' . $fileName);
+    }
+
+    return $urls;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -19,18 +81,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $price = max(1, (int) ($_POST['price'] ?? 0));
         $lots = max(1, (int) ($_POST['lots'] ?? 1));
         $status = trim($_POST['status'] ?? 'Yayında');
-        $image = trim($_POST['image'] ?? '');
-        $galleryRaw = trim($_POST['gallery_urls'] ?? '');
         $tagRaw = trim($_POST['tags'] ?? '');
         $endAtInput = trim($_POST['end_at'] ?? '');
         $endAt = $endAtInput !== '' ? date('Y-m-d H:i:s', strtotime($endAtInput)) : date('Y-m-d H:i:s', strtotime('+7 days'));
-        $gallery = array_values(array_filter(array_map('trim', explode(',', $galleryRaw))));
-        if (empty($gallery) && $image !== '') {
-            $gallery = [$image];
-        }
         $tags = array_values(array_filter(array_map('trim', explode(',', $tagRaw))));
 
-        if ($title !== '' && $price > 0) {
+        $mainImage = uploaded_image_urls('main_image')[0] ?? '';
+        $galleryUploads = uploaded_image_urls('gallery_images', true);
+        $gallery = array_values(array_unique(array_filter(array_merge([$mainImage], $galleryUploads))));
+
+        if ($title === '' || $price <= 0) {
+            $error = 'Başlık ve fiyat zorunludur.';
+        } elseif ($mainImage === '') {
+            $error = 'Lütfen cihazınızdan en az bir ana ürün fotoğrafı yükleyin.';
+        } else {
             $ids = array_column($_SESSION['products'], 'id');
             $nextId = $ids ? max($ids) + 1 : 1;
             $_SESSION['products'][] = [
@@ -41,13 +105,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'lots' => $lots,
                 'end_at' => $endAt,
                 'price' => $price,
-                'image' => $image !== '' ? $image : 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80',
-                'gallery' => !empty($gallery) ? $gallery : [($image !== '' ? $image : 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80')],
+                'image' => $mainImage,
+                'gallery' => !empty($gallery) ? $gallery : [$mainImage],
                 'tags' => $tags,
             ];
             $message = 'Ürün eklendi.';
-        } else {
-            $error = 'Başlık ve fiyat zorunludur.';
         }
     }
 
@@ -59,17 +121,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $product['price'] = max(1, (int) ($_POST['price'] ?? $product['price']));
                 $product['lots'] = max(1, (int) ($_POST['lots'] ?? $product['lots']));
                 $product['status'] = trim($_POST['status'] ?? $product['status']);
-                $product['image'] = trim($_POST['image'] ?? $product['image']);
-                $galleryRaw = trim($_POST['gallery_urls'] ?? '');
-                if ($galleryRaw !== '') {
-                    $product['gallery'] = array_values(array_filter(array_map('trim', explode(',', $galleryRaw))));
-                }
                 $tagRaw = trim($_POST['tags'] ?? '');
                 $product['tags'] = $tagRaw !== '' ? array_values(array_filter(array_map('trim', explode(',', $tagRaw)))) : [];
+
                 $endAtInput = trim($_POST['end_at'] ?? '');
                 if ($endAtInput !== '') {
                     $product['end_at'] = date('Y-m-d H:i:s', strtotime($endAtInput));
                 }
+
+                $newMain = uploaded_image_urls('main_image')[0] ?? '';
+                $newGallery = uploaded_image_urls('gallery_images', true);
+                if ($newMain !== '') {
+                    $product['image'] = $newMain;
+                }
+                if (!empty($newGallery)) {
+                    $mergedGallery = array_values(array_unique(array_filter(array_merge([$product['image']], $newGallery))));
+                    $product['gallery'] = $mergedGallery;
+                } elseif (!empty($product['image']) && empty($product['gallery'])) {
+                    $product['gallery'] = [$product['image']];
+                }
+
                 $message = 'Ürün güncellendi.';
                 break;
             }
@@ -108,7 +179,7 @@ $sellerProducts = array_values(array_filter($_SESSION['products'], fn(array $pro
         <?php echo render_site_logo(); ?>
         <div class="nav-search">
             <form method="get" action="<?php echo url_path('pages/auctions.php'); ?>">
-                <input class="nav-search-input" type="search" name="q" placeholder="Ürün, satıcı veya kategori ara..." />
+                <input class="nav-search-input" type="search" name="q" placeholder="Ürün ara..." />
             </form>
         </div>
         <nav>
@@ -120,6 +191,7 @@ $sellerProducts = array_values(array_filter($_SESSION['products'], fn(array $pro
             </ul>
         </nav>
         <div class="nav-actions">
+            <a class="btn btn-primary" href="#new-product">+ Ürün Ekle</a>
             <a class="cart-icon-btn" href="<?php echo url_path('pages/cart.php'); ?>" aria-label="Sepet">🛒<span class="cart-count"><?php echo cart_count() > 0 ? cart_count() : '•'; ?></span></a>
             <div class="profile-menu">
                 <div class="profile-trigger">
@@ -139,7 +211,7 @@ $sellerProducts = array_values(array_filter($_SESSION['products'], fn(array $pro
 <section class="container">
     <div class="card">
         <h1>Satıcı Ürün Yönetimi</h1>
-        <p>Ürün fotoğrafı, fiyat, lot adedi, müzayede bitiş tarihi ve durum alanlarını buradan düzenleyebilirsiniz.</p>
+        <p>Ürünleri burada profesyonel şekilde ekleyebilir, güncelleyebilir ve silebilirsiniz.</p>
 
         <?php if ($message): ?>
             <div class="card" style="background:#e4f9ef;color:#1f9d62;margin-bottom:16px;"><?php echo htmlspecialchars($message); ?></div>
@@ -148,15 +220,17 @@ $sellerProducts = array_values(array_filter($_SESSION['products'], fn(array $pro
             <div class="card" style="background:#ffe1e6;color:#b3283b;margin-bottom:16px;"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
 
-        <div class="card" style="margin-bottom: 20px;">
+        <div class="card" id="new-product" style="margin-bottom: 20px;">
             <h3>Yeni Ürün Ekle</h3>
-            <form class="form" method="post">
+            <form class="form" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="add_product" />
                 <input type="text" name="title" placeholder="Ürün başlığı" required />
                 <input type="number" name="price" min="1" placeholder="Başlangıç fiyatı" required />
                 <input type="number" name="lots" min="1" value="1" placeholder="Lot sayısı" required />
-                <input type="url" name="image" placeholder="Ürün görsel URL" />
-                <input type="text" name="gallery_urls" placeholder="Ek fotoğraflar (virgülle URL)" />
+                <label class="muted">Ana ürün fotoğrafı (cihazdan yükle)</label>
+                <input type="file" name="main_image" accept="image/*" required />
+                <label class="muted">Galeri fotoğrafları (çoklu seçim)</label>
+                <input type="file" name="gallery_images[]" accept="image/*" multiple />
                 <input type="text" name="tags" placeholder="Etiketler (virgülle: antika,retro,koleksiyon)" />
                 <input type="text" name="status" value="Yayında" placeholder="Durum" />
                 <label class="muted">Müzayede bitiş tarihi</label>
@@ -175,15 +249,17 @@ $sellerProducts = array_values(array_filter($_SESSION['products'], fn(array $pro
                     <?php endif; ?>
                     <p>Kalan süre: <span class="countdown-live" data-end-at="<?php echo product_end_at($product); ?>"><?php echo product_countdown_label($product); ?></span></p>
                     <p>Bitiş: <?php echo htmlspecialchars(product_deadline_label($product)); ?></p>
-                    <form class="form" method="post">
+                    <form class="form" method="post" enctype="multipart/form-data">
                         <input type="hidden" name="action" value="edit_product" />
                         <input type="hidden" name="product_id" value="<?php echo (int) $product['id']; ?>" />
                         <input type="text" name="title" value="<?php echo htmlspecialchars($product['title']); ?>" />
                         <input type="number" name="price" min="1" value="<?php echo (int) $product['price']; ?>" />
                         <input type="number" name="lots" min="1" value="<?php echo (int) $product['lots']; ?>" />
                         <input type="text" name="status" value="<?php echo htmlspecialchars($product['status']); ?>" />
-                        <input type="url" name="image" value="<?php echo htmlspecialchars($product['image'] ?? ''); ?>" />
-                        <input type="text" name="gallery_urls" value="<?php echo htmlspecialchars(implode(', ', $product['gallery'] ?? [])); ?>" />
+                        <label class="muted">Ana fotoğrafı değiştir (opsiyonel)</label>
+                        <input type="file" name="main_image" accept="image/*" />
+                        <label class="muted">Yeni galeri fotoğrafları (opsiyonel)</label>
+                        <input type="file" name="gallery_images[]" accept="image/*" multiple />
                         <input type="text" name="tags" value="<?php echo htmlspecialchars(implode(', ', $product['tags'] ?? [])); ?>" />
                         <input type="datetime-local" name="end_at" value="<?php echo date('Y-m-d\TH:i', product_end_at($product)); ?>" />
                         <div class="actions">
@@ -196,7 +272,7 @@ $sellerProducts = array_values(array_filter($_SESSION['products'], fn(array $pro
             <?php if (empty($sellerProducts)): ?>
                 <div class="card">
                     <h3>Henüz ürününüz yok</h3>
-                    <p>Yukarıdaki formu kullanarak ürün ekleyebilirsiniz.</p>
+                    <p>Yukarıdaki "Ürün Ekle" butonunu kullanarak ürün ekleyebilirsiniz.</p>
                 </div>
             <?php endif; ?>
         </div>

@@ -127,17 +127,15 @@ $searchQuery = trim($_GET['q'] ?? '');
         }
 
         .nav {
-            display: grid;
-            grid-template-columns: auto minmax(200px, 380px) 1fr;
+            display: flex;
             align-items: center;
-            padding: 14px 8vw 10px;
+            padding: 12px 8vw;
             gap: 14px;
+            flex-wrap: nowrap;
         }
 
         .nav > nav {
-            grid-column: 2 / 4;
-            border-top: 1px solid var(--line);
-            padding-top: 10px;
+            margin-left: auto;
         }
 
         .logo {
@@ -170,12 +168,12 @@ $searchQuery = trim($_GET['q'] ?? '');
         nav ul {
             list-style: none;
             display: flex;
-            gap: 16px;
+            gap: 14px;
             padding: 0;
             margin: 0;
             color: var(--text);
             font-weight: 600;
-            justify-content: flex-end;
+            white-space: nowrap;
         }
 
         .nav-actions {
@@ -218,9 +216,8 @@ $searchQuery = trim($_GET['q'] ?? '');
         }
 
         .nav-search {
-            width: 100%;
-            max-width: 380px;
-            justify-self: center;
+            width: min(280px, 100%);
+            flex: 0 0 auto;
         }
 
         .nav-search-input {
@@ -578,22 +575,25 @@ $searchQuery = trim($_GET['q'] ?? '');
 
         @media (max-width: 900px) {
             .nav {
-                grid-template-columns: 1fr;
+                flex-wrap: wrap;
                 gap: 10px;
             }
 
             .nav > nav {
-                grid-column: 1;
-            }
-
-            .nav-actions {
-                justify-self: stretch;
-                justify-content: flex-start;
-                flex-wrap: wrap;
+                order: 3;
+                width: 100%;
+                margin-left: 0;
             }
 
             .nav-search {
-                max-width: none;
+                order: 2;
+                width: 100%;
+            }
+
+            .nav-actions {
+                margin-left: auto;
+                justify-content: flex-start;
+                flex-wrap: wrap;
             }
 
             nav ul {
