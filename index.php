@@ -128,16 +128,16 @@ $searchQuery = trim($_GET['q'] ?? '');
 
         .nav {
             display: grid;
-            grid-template-columns: auto minmax(280px, 1fr) auto;
+            grid-template-columns: auto minmax(200px, 380px) 1fr;
             align-items: center;
-            padding: 18px 8vw;
-            gap: 20px;
+            padding: 14px 8vw 10px;
+            gap: 14px;
         }
 
         .nav > nav {
-            grid-column: 1 / -1;
+            grid-column: 2 / 4;
             border-top: 1px solid var(--line);
-            padding-top: 12px;
+            padding-top: 10px;
         }
 
         .logo {
@@ -170,11 +170,12 @@ $searchQuery = trim($_GET['q'] ?? '');
         nav ul {
             list-style: none;
             display: flex;
-            gap: 22px;
+            gap: 16px;
             padding: 0;
             margin: 0;
             color: var(--text);
             font-weight: 600;
+            justify-content: flex-end;
         }
 
         .nav-actions {
@@ -184,18 +185,59 @@ $searchQuery = trim($_GET['q'] ?? '');
             justify-self: end;
         }
 
+
+        .cart-icon-btn {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            background: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            min-width: 19px;
+            height: 19px;
+            border-radius: 999px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 0.68rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+        }
+
         .nav-search {
             width: 100%;
+            max-width: 380px;
+            justify-self: center;
         }
 
         .nav-search-input {
             width: 100%;
-            height: 44px;
+            height: 40px;
             border-radius: 999px;
             border: 1px solid var(--line);
-            padding: 0 16px;
-            font-size: 0.95rem;
+            padding: 0 14px;
+            font-size: 0.92rem;
             background: #fff;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .nav-search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(255, 61, 110, 0.15);
         }
 
         .profile-menu {
@@ -537,6 +579,11 @@ $searchQuery = trim($_GET['q'] ?? '');
         @media (max-width: 900px) {
             .nav {
                 grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .nav > nav {
+                grid-column: 1;
             }
 
             .nav-actions {
@@ -545,9 +592,13 @@ $searchQuery = trim($_GET['q'] ?? '');
                 flex-wrap: wrap;
             }
 
+            .nav-search {
+                max-width: none;
+            }
+
             nav ul {
                 flex-wrap: wrap;
-                justify-content: center;
+                justify-content: flex-start;
             }
 
             .slide {
@@ -584,7 +635,7 @@ $searchQuery = trim($_GET['q'] ?? '');
             </ul>
         </nav>
         <div class="nav-actions">
-            <a class="btn btn-outline cart-pill" href="<?php echo url_path('pages/cart.php'); ?>">Sepet <span class="cart-count"><?php echo cart_count() > 0 ? cart_count() : '•'; ?></span></a>
+            <a class="cart-icon-btn" href="<?php echo url_path('pages/cart.php'); ?>" aria-label="Sepet">🛒<span class="cart-count"><?php echo cart_count() > 0 ? cart_count() : '•'; ?></span></a>
             <?php if ($currentUser): ?>
                 <div class="profile-menu">
                     <div class="profile-trigger">

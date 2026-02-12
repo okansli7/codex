@@ -58,7 +58,7 @@ $total = cart_total();
             </ul>
         </nav>
         <div class="nav-actions">
-            <a class="btn btn-outline cart-pill" href="<?php echo url_path('pages/cart.php'); ?>">Sepet <span class="cart-count"><?php echo cart_count() > 0 ? cart_count() : '•'; ?></span></a>
+            <a class="cart-icon-btn" href="<?php echo url_path('pages/cart.php'); ?>" aria-label="Sepet">🛒<span class="cart-count"><?php echo cart_count() > 0 ? cart_count() : '•'; ?></span></a>
             <?php if ($currentUser): ?>
                 <div class="profile-menu">
                     <div class="profile-trigger">

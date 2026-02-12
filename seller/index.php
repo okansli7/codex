@@ -105,7 +105,7 @@ $sellerProducts = array_values(array_filter($_SESSION['products'], fn(array $pro
             </ul>
         </nav>
         <div class="nav-actions">
-            <a class="btn btn-outline cart-pill" href="<?php echo url_path('pages/cart.php'); ?>">Sepet <span class="cart-count"><?php echo cart_count() > 0 ? cart_count() : '•'; ?></span></a>
+            <a class="cart-icon-btn" href="<?php echo url_path('pages/cart.php'); ?>" aria-label="Sepet">🛒<span class="cart-count"><?php echo cart_count() > 0 ? cart_count() : '•'; ?></span></a>
             <div class="profile-menu">
                 <div class="profile-trigger">
                     <img class="profile-avatar" src="<?php echo htmlspecialchars($avatar); ?>" alt="Profil" />
@@ -153,7 +153,7 @@ $sellerProducts = array_values(array_filter($_SESSION['products'], fn(array $pro
                 <div class="card">
                     <img class="auction-thumb" src="<?php echo htmlspecialchars($product['image'] ?? ''); ?>" alt="<?php echo htmlspecialchars($product['title']); ?>" />
                     <h3><?php echo htmlspecialchars($product['title']); ?></h3>
-                    <p>Kalan süre: <strong><?php echo product_countdown_label($product); ?></strong></p>
+                    <p>Kalan süre: <span class="countdown-live" data-end-at="<?php echo product_end_at($product); ?>"><?php echo product_countdown_label($product); ?></span></p>
                     <p>Bitiş: <?php echo htmlspecialchars(product_deadline_label($product)); ?></p>
                     <form class="form" method="post">
                         <input type="hidden" name="action" value="edit_product" />
@@ -184,5 +184,31 @@ $sellerProducts = array_values(array_filter($_SESSION['products'], fn(array $pro
 <footer>
     Artirup © 2050 • Satıcı operasyon merkezi.
 </footer>
+<script>
+(function initLiveCountdowns(){
+  const nodes = document.querySelectorAll('.countdown-live[data-end-at]');
+  if (!nodes.length) return;
+  const tick = () => {
+    const now = Math.floor(Date.now()/1000);
+    nodes.forEach((node) => {
+      const endAt = parseInt(node.dataset.endAt || '0', 10);
+      let diff = endAt - now;
+      if (diff <= 0) {
+        node.textContent = 'Süre doldu';
+        return;
+      }
+      const days = Math.floor(diff / 86400);
+      diff %= 86400;
+      const hours = Math.floor(diff / 3600);
+      diff %= 3600;
+      const minutes = Math.floor(diff / 60);
+      const seconds = diff % 60;
+      node.textContent = `${days}g ${String(hours).padStart(2,'0')}s ${String(minutes).padStart(2,'0')}d ${String(seconds).padStart(2,'0')}sn`;
+    });
+  };
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
 </body>
 </html>
