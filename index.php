@@ -73,6 +73,7 @@ $currentUser = current_user();
 $dashboardLink = $currentUser ? user_dashboard_link($currentUser) : '';
 $dashboardLabel = $currentUser ? user_dashboard_label($currentUser) : '';
 $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=facearea&w=120&h=120&q=80';
+$searchQuery = trim($_GET['q'] ?? '');
 ?>
 <!doctype html>
 <html lang="tr">
@@ -126,11 +127,17 @@ $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-154472379
         }
 
         .nav {
-            display: flex;
+            display: grid;
+            grid-template-columns: auto minmax(280px, 1fr) auto;
             align-items: center;
-            justify-content: space-between;
             padding: 18px 8vw;
             gap: 20px;
+        }
+
+        .nav > nav {
+            grid-column: 1 / -1;
+            border-top: 1px solid var(--line);
+            padding-top: 12px;
         }
 
         .logo {
@@ -174,6 +181,21 @@ $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-154472379
             display: flex;
             gap: 12px;
             align-items: center;
+            justify-self: end;
+        }
+
+        .nav-search {
+            width: 100%;
+        }
+
+        .nav-search-input {
+            width: 100%;
+            height: 44px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            padding: 0 16px;
+            font-size: 0.95rem;
+            background: #fff;
         }
 
         .profile-menu {
@@ -513,6 +535,16 @@ $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-154472379
         }
 
         @media (max-width: 900px) {
+            .nav {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-actions {
+                justify-self: stretch;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+            }
+
             nav ul {
                 flex-wrap: wrap;
                 justify-content: center;
@@ -536,6 +568,11 @@ $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-154472379
 <header>
     <div class="nav">
         <?php echo render_site_logo(); ?>
+        <div class="nav-search">
+            <form method="get" action="<?php echo url_path('pages/auctions.php'); ?>">
+                <input class="nav-search-input" type="search" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Ürün, satıcı veya kategori ara..." />
+            </form>
+        </div>
         <nav>
             <ul>
                 <li><a href="<?php echo url_path('index.php'); ?>">Anasayfa</a></li>
@@ -543,11 +580,11 @@ $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-154472379
                 <li><a href="<?php echo url_path('pages/auctions.php'); ?>">Açık Artırmalar</a></li>
                 <li><a href="<?php echo url_path('pages/stores.php'); ?>">Mağazalar</a></li>
                 <li><a href="<?php echo url_path('pages/blog.php'); ?>">Blog</a></li>
-                <li><a href="<?php echo url_path('pages/cart.php'); ?>">Sepet (<?php echo cart_count(); ?>)</a></li>
                 <li><a href="<?php echo url_path('pages/contact.php'); ?>">İletişim</a></li>
             </ul>
         </nav>
         <div class="nav-actions">
+            <a class="btn btn-outline" href="<?php echo url_path('pages/cart.php'); ?>">Sepet (<?php echo cart_count(); ?>)</a>
             <?php if ($currentUser): ?>
                 <div class="profile-menu">
                     <div class="profile-trigger">

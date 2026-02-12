@@ -6,6 +6,15 @@ $dashboardLabel = $currentUser ? user_dashboard_label($currentUser) : '';
 $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=facearea&w=120&h=120&q=80';
 $message = '';
 $error = '';
+$searchQuery = trim($_GET['q'] ?? '');
+
+$filteredProducts = $_SESSION['products'];
+if ($searchQuery !== '') {
+    $filteredProducts = array_values(array_filter($_SESSION['products'], function (array $product) use ($searchQuery): bool {
+        $haystack = strtolower(($product['title'] ?? '') . ' ' . ($product['seller'] ?? ''));
+        return str_contains($haystack, strtolower($searchQuery));
+    }));
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -97,17 +106,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <header>
     <div class="nav">
         <?php echo render_site_logo(); ?>
+        <div class="nav-search">
+            <form method="get" action="<?php echo url_path('pages/auctions.php'); ?>">
+                <input class="nav-search-input" type="search" name="q" value="<?php echo htmlspecialchars($searchQuery); ?>" placeholder="Ürün, satıcı veya kategori ara..." />
+            </form>
+        </div>
         <nav>
             <ul>
                 <li><a href="<?php echo url_path('index.php'); ?>">Anasayfa</a></li>
                 <li><a href="<?php echo url_path('pages/about.php'); ?>">Hakkımızda</a></li>
                 <li><a href="<?php echo url_path('pages/stores.php'); ?>">Mağazalar</a></li>
                 <li><a href="<?php echo url_path('pages/blog.php'); ?>">Blog</a></li>
-                <li><a href="<?php echo url_path('pages/cart.php'); ?>">Sepet (<?php echo cart_count(); ?>)</a></li>
                 <li><a href="<?php echo url_path('pages/contact.php'); ?>">İletişim</a></li>
             </ul>
         </nav>
         <div class="nav-actions">
+            <a class="btn btn-outline" href="<?php echo url_path('pages/cart.php'); ?>">Sepet (<?php echo cart_count(); ?>)</a>
             <?php if ($currentUser): ?>
                 <div class="profile-menu">
                     <div class="profile-trigger">
@@ -154,7 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="grid">
-            <?php foreach ($_SESSION['products'] as $product): ?>
+            <?php foreach ($filteredProducts as $product): ?>
                 <div class="card">
                     <h3><?php echo htmlspecialchars($product['title']); ?></h3>
                     <p>Bitiş: <?php echo $product['end']; ?> • <?php echo $product['lots']; ?> lot</p>
@@ -202,6 +216,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
             <?php endforeach; ?>
+            <?php if (empty($filteredProducts)): ?>
+                <div class="card">
+                    <h3>Sonuç bulunamadı</h3>
+                    <p>Arama kriterlerinize uygun ürün bulunamadı. Farklı bir anahtar kelime deneyin.</p>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </section>

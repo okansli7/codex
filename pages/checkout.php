@@ -47,15 +47,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <header>
     <div class="nav">
         <?php echo render_site_logo(); ?>
+        <div class="nav-search">
+            <form method="get" action="<?php echo url_path('pages/auctions.php'); ?>">
+                <input class="nav-search-input" type="search" name="q" placeholder="Ürün, satıcı veya kategori ara..." />
+            </form>
+        </div>
         <nav>
             <ul>
                 <li><a href="<?php echo url_path('index.php'); ?>">Anasayfa</a></li>
                 <li><a href="<?php echo url_path('pages/auctions.php'); ?>">Açık Artırmalar</a></li>
-                <li><a href="<?php echo url_path('pages/cart.php'); ?>">Sepet (<?php echo cart_count(); ?>)</a></li>
                 <li><a href="<?php echo url_path('pages/contact.php'); ?>">İletişim</a></li>
             </ul>
         </nav>
         <div class="nav-actions">
+            <a class="btn btn-outline" href="<?php echo url_path('pages/cart.php'); ?>">Sepet (<?php echo cart_count(); ?>)</a>
             <?php if ($currentUser): ?>
                 <div class="profile-menu">
                     <div class="profile-trigger">
