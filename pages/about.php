@@ -20,6 +20,11 @@ $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-154472379
 <header>
     <div class="nav">
         <?php echo render_site_logo(); ?>
+        <div class="nav-search">
+            <form method="get" action="<?php echo url_path('pages/auctions.php'); ?>">
+                <input class="nav-search-input" type="search" name="q" placeholder="Ürün, satıcı veya kategori ara..." />
+            </form>
+        </div>
         <nav>
             <ul>
                 <li><a href="<?php echo url_path('index.php'); ?>">Anasayfa</a></li>
@@ -30,6 +35,7 @@ $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-154472379
             </ul>
         </nav>
         <div class="nav-actions">
+            <a class="cart-icon-btn" href="<?php echo url_path('pages/cart.php'); ?>" aria-label="Sepet">🛒<span class="cart-count"><?php echo cart_count() > 0 ? cart_count() : '•'; ?></span></a>
             <?php if ($currentUser): ?>
                 <div class="profile-menu">
                     <div class="profile-trigger">
