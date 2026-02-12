@@ -341,6 +341,125 @@ nav a {
     font-size: 1rem;
 }
 
+
+.top-strip {
+    background: #1f2335;
+    color: #d7dbea;
+    padding: 8px 8vw;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    font-size: 0.88rem;
+}
+
+.top-strip-left,
+.top-strip-right {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.top-strip strong {
+    color: #fff;
+}
+
+.top-strip a {
+    color: #ffd1de;
+    text-decoration: none;
+}
+
+.product-main-image {
+    width: 100%;
+    height: 380px;
+    object-fit: contain;
+    border-radius: 16px;
+    margin-bottom: 12px;
+    background: linear-gradient(180deg, #f9fafe, #eef2ff);
+    border: 1px solid var(--line);
+}
+
+.product-gallery {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.product-gallery img {
+    width: 74px;
+    height: 74px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid #eef0f6;
+    background: #f7f8ff;
+    padding: 4px;
+}
+
+.social-share {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.social-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    text-decoration: none;
+    background: #fff;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    font-size: 1rem;
+}
+
+.social-icon:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 18px rgba(25, 34, 60, 0.12);
+}
+
+.comment-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid #eef0f6;
+}
+
+.comment-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 6px 14px rgba(31, 35, 53, 0.16);
+    background: #ffdce7;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #b8325a;
+}
+
+.emoji-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.emoji-btn {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 999px;
+    padding: 4px 10px;
+    cursor: pointer;
+}
+
 footer {
     padding: 30px 8vw;
     background: #fff;
@@ -373,5 +492,15 @@ footer {
     nav ul {
         flex-wrap: wrap;
         justify-content: flex-start;
+    }
+
+    .top-strip {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .top-strip-left,
+    .top-strip-right {
+        gap: 10px;
     }
 }

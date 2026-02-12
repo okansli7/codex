@@ -101,6 +101,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 </head>
 <body>
+<div class="top-strip">
+    <div class="top-strip-left">
+        <span><strong>TR</strong> • Canlı Destek</span>
+        <span>Bizi ara: <strong>+90 850 840 00 00</strong></span>
+        <span>E-posta: <a href="mailto:destek@artirup.com">destek@artirup.com</a></span>
+    </div>
+    <div class="top-strip-right">
+        <span>🚚 Sipariş Takibi</span>
+    </div>
+</div>
 <header>
     <div class="nav">
         <?php echo render_site_logo(); ?>

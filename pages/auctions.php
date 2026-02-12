@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($commentText !== '') {
                 $_SESSION['comments'][$productId][] = [
                     'author' => $currentUser['name'] ?? 'Kullanıcı',
+                    'avatar' => $currentUser['avatar'] ?? '',
                     'text' => $commentText,
                 ];
                 $message = 'Yorumun kaydedildi.';
@@ -66,6 +67,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="<?php echo url_path('assets/css/secondary.css'); ?>" />
 </head>
 <body>
+<div class="top-strip">
+    <div class="top-strip-left">
+        <span><strong>TR</strong> • Canlı Destek</span>
+        <span>Bizi ara: <strong>+90 850 840 00 00</strong></span>
+        <span>E-posta: <a href="mailto:destek@artirup.com">destek@artirup.com</a></span>
+    </div>
+    <div class="top-strip-right">
+        <span>🚚 Sipariş Takibi</span>
+    </div>
+</div>
 <header>
     <div class="nav">
         <?php echo render_site_logo(); ?>
@@ -148,7 +159,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div style="margin-top: 12px;">
                         <h4>Yorumlar</h4>
                         <?php foreach (($_SESSION['comments'][$product['id']] ?? []) as $comment): ?>
-                            <p><strong><?php echo htmlspecialchars($comment['author']); ?>:</strong> <?php echo htmlspecialchars($comment['text']); ?></p>
+                            <div class="comment-item">
+                                <?php if (!empty($comment['avatar'])): ?>
+                                    <img class="comment-avatar" src="<?php echo htmlspecialchars($comment['avatar']); ?>" alt="<?php echo htmlspecialchars($comment['author'] ?? 'Kullanıcı'); ?>" />
+                                <?php else: ?>
+                                    <span class="comment-avatar"><?php echo strtoupper(substr($comment['author'] ?? 'U', 0, 1)); ?></span>
+                                <?php endif; ?>
+                                <div>
+                                    <strong><?php echo htmlspecialchars($comment['author']); ?></strong>
+                                    <div><?php echo htmlspecialchars($comment['text']); ?></div>
+                                </div>
+                            </div>
                         <?php endforeach; ?>
                         <?php if ($currentUser): ?>
                             <form class="form" method="post">

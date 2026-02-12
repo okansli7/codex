@@ -174,6 +174,16 @@ $sellerProducts = array_values(array_filter($_SESSION['products'], fn(array $pro
     <link rel="stylesheet" href="<?php echo url_path('assets/css/secondary.css'); ?>" />
 </head>
 <body>
+<div class="top-strip">
+    <div class="top-strip-left">
+        <span><strong>TR</strong> • Canlı Destek</span>
+        <span>Bizi ara: <strong>+90 850 840 00 00</strong></span>
+        <span>E-posta: <a href="mailto:destek@artirup.com">destek@artirup.com</a></span>
+    </div>
+    <div class="top-strip-right">
+        <span>🚚 Sipariş Takibi</span>
+    </div>
+</div>
 <header>
     <div class="nav">
         <?php echo render_site_logo(); ?>

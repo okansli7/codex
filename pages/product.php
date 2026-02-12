@@ -43,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $product) {
             if ($commentText !== '') {
                 $_SESSION['comments'][$productId][] = [
                     'author' => $currentUser['name'] ?? 'Kullanıcı',
+                    'avatar' => $currentUser['avatar'] ?? '',
                     'text' => $commentText,
                 ];
                 $message = 'Yorumun kaydedildi.';
@@ -63,6 +64,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $product) {
     <link rel="stylesheet" href="<?php echo url_path('assets/css/secondary.css'); ?>" />
 </head>
 <body>
+<div class="top-strip">
+    <div class="top-strip-left">
+        <span><strong>TR</strong> • Canlı Destek</span>
+        <span>Bizi ara: <strong>+90 850 840 00 00</strong></span>
+        <span>E-posta: <a href="mailto:destek@artirup.com">destek@artirup.com</a></span>
+    </div>
+    <div class="top-strip-right">
+        <span>🚚 Sipariş Takibi</span>
+    </div>
+</div>
 <header>
     <div class="nav">
         <?php echo render_site_logo(); ?>
@@ -116,11 +127,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $product) {
         <?php if ($product): ?>
             <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
                 <div class="card">
-                    <img class="auction-thumb" src="<?php echo htmlspecialchars($product['image'] ?? ''); ?>" alt="<?php echo htmlspecialchars($product['title']); ?>" />
+                    <img class="product-main-image" src="<?php echo htmlspecialchars($product['image'] ?? ''); ?>" alt="<?php echo htmlspecialchars($product['title']); ?>" />
                     <?php if (!empty($product['gallery'])): ?>
-                        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+                        <div class="product-gallery">
                             <?php foreach ($product['gallery'] as $galleryImage): ?>
-                                <img src="<?php echo htmlspecialchars($galleryImage); ?>" alt="Galeri" style="width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid #eef0f6;" />
+                                <img src="<?php echo htmlspecialchars($galleryImage); ?>" alt="Galeri" />
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
@@ -153,21 +164,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $product) {
                 <h3>Yorumlar</h3>
                 <div class="card" style="margin-bottom: 12px;">
                     <h4>Paylaş</h4>
-                    <div class="actions" style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <a class="btn btn-outline" target="_blank" href="https://wa.me/?text=<?php echo urlencode('Bu müzayedeye bak: ' . $productUrl); ?>">WhatsApp</a>
-                        <a class="btn btn-outline" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=<?php echo urlencode($productUrl); ?>">Facebook</a>
-                        <a class="btn btn-outline" target="_blank" href="https://twitter.com/intent/tweet?url=<?php echo urlencode($productUrl); ?>&text=<?php echo urlencode($product['title'] ?? 'Müzayede'); ?>">X/Twitter</a>
-                        <a class="btn btn-outline" target="_blank" href="https://t.me/share/url?url=<?php echo urlencode($productUrl); ?>&text=<?php echo urlencode($product['title'] ?? 'Müzayede'); ?>">Telegram</a>
-                        <a class="btn btn-outline" target="_blank" href="https://www.linkedin.com/sharing/share-offsite/?url=<?php echo urlencode($productUrl); ?>">LinkedIn</a>
+                    <div class="social-share">
+                        <a class="social-icon" title="WhatsApp" target="_blank" href="https://wa.me/?text=<?php echo urlencode('Bu müzayedeye bak: ' . $productUrl); ?>">💬</a>
+                        <a class="social-icon" title="Facebook" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=<?php echo urlencode($productUrl); ?>">📘</a>
+                        <a class="social-icon" title="X / Twitter" target="_blank" href="https://twitter.com/intent/tweet?url=<?php echo urlencode($productUrl); ?>&text=<?php echo urlencode($product['title'] ?? 'Müzayede'); ?>">𝕏</a>
+                        <a class="social-icon" title="Telegram" target="_blank" href="https://t.me/share/url?url=<?php echo urlencode($productUrl); ?>&text=<?php echo urlencode($product['title'] ?? 'Müzayede'); ?>">✈️</a>
+                        <a class="social-icon" title="LinkedIn" target="_blank" href="https://www.linkedin.com/sharing/share-offsite/?url=<?php echo urlencode($productUrl); ?>">💼</a>
                     </div>
                 </div>
                 <?php foreach (($_SESSION['comments'][$productId] ?? []) as $comment): ?>
-                    <p><strong><?php echo htmlspecialchars($comment['author']); ?>:</strong> <?php echo htmlspecialchars($comment['text']); ?></p>
+                    <div class="comment-item">
+                        <?php if (!empty($comment['avatar'])): ?>
+                            <img class="comment-avatar" src="<?php echo htmlspecialchars($comment['avatar']); ?>" alt="<?php echo htmlspecialchars($comment['author'] ?? 'Kullanıcı'); ?>" />
+                        <?php else: ?>
+                            <span class="comment-avatar"><?php echo strtoupper(substr($comment['author'] ?? 'U', 0, 1)); ?></span>
+                        <?php endif; ?>
+                        <div>
+                            <strong><?php echo htmlspecialchars($comment['author']); ?></strong>
+                            <div><?php echo htmlspecialchars($comment['text']); ?></div>
+                        </div>
+                    </div>
                 <?php endforeach; ?>
                 <?php if ($currentUser): ?>
                     <form class="form" method="post">
                         <input type="hidden" name="action" value="add_comment" />
-                        <input type="text" name="comment" placeholder="Yorum yaz" />
+                        <input id="comment-input" type="text" name="comment" placeholder="Yorum yaz" />
+                        <div class="emoji-row">
+                            <button class="emoji-btn" type="button" data-emoji="😀">😀</button>
+                            <button class="emoji-btn" type="button" data-emoji="🔥">🔥</button>
+                            <button class="emoji-btn" type="button" data-emoji="👏">👏</button>
+                            <button class="emoji-btn" type="button" data-emoji="😍">😍</button>
+                            <button class="emoji-btn" type="button" data-emoji="🎉">🎉</button>
+                        </div>
                         <button class="btn btn-outline" type="submit">Yorum gönder</button>
                     </form>
                 <?php else: ?>
@@ -206,6 +234,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $product) {
   tick();
   setInterval(tick, 1000);
 })();
+
+document.querySelectorAll('.emoji-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById('comment-input');
+    if (!input) return;
+    input.value = (input.value + " " + (btn.dataset.emoji || "")).trimStart();
+    input.focus();
+  });
+});
 </script>
 </body>
 </html>
