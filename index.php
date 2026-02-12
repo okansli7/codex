@@ -648,8 +648,10 @@ $searchQuery = trim($_GET['q'] ?? '');
                         <a href="<?php echo url_path('auth/logout.php'); ?>">Çıkış Yap</a>
                     </div>
                 </div>
+                <?php if (($currentUser['role'] ?? '') === 'Satıcı'): ?>
+                    <a class="btn btn-outline" href="<?php echo url_path('seller/index.php'); ?>">Satıcı Paneli</a>
+                <?php endif; ?>
             <?php else: ?>
-                <a class="btn btn-outline" href="<?php echo url_path('seller/index.php'); ?>">Satıcı</a>
                 <a class="btn btn-outline" href="<?php echo url_path('auth/login.php'); ?>">Giriş Yap</a>
                 <a class="btn btn-primary" href="<?php echo url_path('auth/register.php'); ?>">Kayıt Ol</a>
             <?php endif; ?>

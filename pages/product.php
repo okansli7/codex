@@ -14,6 +14,7 @@ foreach ($_SESSION['products'] as $item) {
 }
 $message = '';
 $error = '';
+$productUrl = url_path('pages/product.php') . '?id=' . $productId;
 
 if (!$product) {
     $error = 'Ürün bulunamadı.';
@@ -116,7 +117,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $product) {
             <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
                 <div class="card">
                     <img class="auction-thumb" src="<?php echo htmlspecialchars($product['image'] ?? ''); ?>" alt="<?php echo htmlspecialchars($product['title']); ?>" />
+                    <?php if (!empty($product['gallery'])): ?>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+                            <?php foreach ($product['gallery'] as $galleryImage): ?>
+                                <img src="<?php echo htmlspecialchars($galleryImage); ?>" alt="Galeri" style="width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid #eef0f6;" />
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
                     <h2><?php echo htmlspecialchars($product['title']); ?></h2>
+                    <?php if (!empty($product['tags'])): ?>
+                        <p class="muted">#<?php echo htmlspecialchars(implode(' #', $product['tags'])); ?></p>
+                    <?php endif; ?>
                     <p><strong>Satıcı:</strong> <?php echo htmlspecialchars($product['seller']); ?></p>
                     <p><strong>Durum:</strong> <?php echo htmlspecialchars($product['status']); ?></p>
                     <p><strong>Lot:</strong> <?php echo htmlspecialchars($product['lots']); ?></p>
@@ -140,6 +151,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $product) {
             </div>
             <div class="card" style="margin-top: 24px;">
                 <h3>Yorumlar</h3>
+                <div class="card" style="margin-bottom: 12px;">
+                    <h4>Paylaş</h4>
+                    <div class="actions" style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <a class="btn btn-outline" target="_blank" href="https://wa.me/?text=<?php echo urlencode('Bu müzayedeye bak: ' . $productUrl); ?>">WhatsApp</a>
+                        <a class="btn btn-outline" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=<?php echo urlencode($productUrl); ?>">Facebook</a>
+                        <a class="btn btn-outline" target="_blank" href="https://twitter.com/intent/tweet?url=<?php echo urlencode($productUrl); ?>&text=<?php echo urlencode($product['title'] ?? 'Müzayede'); ?>">X/Twitter</a>
+                        <a class="btn btn-outline" target="_blank" href="https://t.me/share/url?url=<?php echo urlencode($productUrl); ?>&text=<?php echo urlencode($product['title'] ?? 'Müzayede'); ?>">Telegram</a>
+                        <a class="btn btn-outline" target="_blank" href="https://www.linkedin.com/sharing/share-offsite/?url=<?php echo urlencode($productUrl); ?>">LinkedIn</a>
+                    </div>
+                </div>
                 <?php foreach (($_SESSION['comments'][$productId] ?? []) as $comment): ?>
                     <p><strong><?php echo htmlspecialchars($comment['author']); ?>:</strong> <?php echo htmlspecialchars($comment['text']); ?></p>
                 <?php endforeach; ?>

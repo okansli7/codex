@@ -78,6 +78,11 @@ if (!isset($_SESSION['products'])) {
             'end_at' => date('Y-m-d H:i:s', strtotime('+3 days +4 hours')),
             'price' => 1250,
             'image' => 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80',
+            'gallery' => [
+                'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80',
+                'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=80',
+            ],
+            'tags' => ['retro', 'teknoloji'],
         ],
         [
             'id' => 2,
@@ -88,6 +93,11 @@ if (!isset($_SESSION['products'])) {
             'end_at' => date('Y-m-d H:i:s', strtotime('+5 days +2 hours')),
             'price' => 980,
             'image' => 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=900&q=80',
+            'gallery' => [
+                'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=900&q=80',
+                'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=900&q=80',
+            ],
+            'tags' => ['sanat', 'koleksiyon'],
         ],
         [
             'id' => 3,
@@ -98,6 +108,11 @@ if (!isset($_SESSION['products'])) {
             'end_at' => date('Y-m-d H:i:s', strtotime('+1 days +9 hours')),
             'price' => 1850,
             'image' => 'https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=900&q=80',
+            'gallery' => [
+                'https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=900&q=80',
+                'https://images.unsplash.com/photo-1542282088-fe8426682b8f?auto=format&fit=crop&w=900&q=80',
+            ],
+            'tags' => ['otomotiv', 'özel lot'],
         ],
     ];
 }
@@ -108,6 +123,12 @@ foreach ($_SESSION['products'] as &$product) {
     }
     if (!isset($product['image'])) {
         $product['image'] = 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80';
+    }
+    if (!isset($product['gallery']) || !is_array($product['gallery']) || empty($product['gallery'])) {
+        $product['gallery'] = [$product['image']];
+    }
+    if (!isset($product['tags']) || !is_array($product['tags'])) {
+        $product['tags'] = [];
     }
 }
 unset($product);
@@ -306,6 +327,12 @@ function enabled_payment_methods(): array
 {
     $methods = $_SESSION['settings']['payment_methods'] ?? [];
     return array_filter($methods, fn(array $method) => !empty($method['enabled']));
+}
+
+function is_seller(): bool
+{
+    $user = current_user();
+    return $user && (($user['role'] ?? '') === 'Satıcı');
 }
 
 function country_options(): array

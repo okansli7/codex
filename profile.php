@@ -7,6 +7,7 @@ if (!$user) {
 }
 
 $successMessage = '';
+$successType = 'ok';
 $profileMessage = '';
 $role = $user['role'] ?? 'Kullanıcı';
 $avatar = $user['avatar'] ?? 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=facearea&w=160&h=160&q=80';
@@ -55,12 +56,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sellerStore = trim($_POST['store_name'] ?? '');
         $sellerCategory = trim($_POST['store_category'] ?? '');
         $sellerNote = trim($_POST['store_note'] ?? '');
-        $_SESSION['seller_application'] = [
-            'store_name' => $sellerStore,
-            'store_category' => $sellerCategory,
-            'store_note' => $sellerNote,
-        ];
-        $successMessage = 'Satıcı başvurun alındı. Ekibimiz en kısa sürede dönüş yapacak.';
+        $sellerAgreement = !empty($_POST['seller_agreement']);
+        if (!$sellerAgreement) {
+            $successMessage = 'Satıcı olmak için sözleşmeyi kabul etmelisin.';
+            $successType = 'error';
+        } else {
+            $_SESSION['seller_application'] = [
+                'store_name' => $sellerStore,
+                'store_category' => $sellerCategory,
+                'store_note' => $sellerNote,
+                'approved_at' => date('Y-m-d H:i:s'),
+            ];
+            $user['role'] = 'Satıcı';
+            $user['seller_intent'] = true;
+            $user['seller_agreement'] = true;
+            $_SESSION['user'] = $user;
+            $role = $user['role'];
+            $tickClass = 'blue';
+            $successMessage = 'Satıcı sözleşmesi onaylandı. Satıcı panelin aktif edildi.';
+            $successType = 'ok';
+        }
     }
 }
 ?>
@@ -111,8 +126,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div style="margin-top: 20px;">
                 <h4>Hızlı İşlemler</h4>
                 <div class="form">
-                    <?php if (!$vip): ?>
+                    <?php if (($role === 'Satıcı' || is_seller()) && !$vip): ?>
                         <a class="btn btn-outline" href="<?php echo url_path('seller/index.php'); ?>">Açık artırma oluştur</a>
+                    <?php elseif (!$vip): ?>
+                        <a class="btn btn-outline" href="#seller-basvuru">Satıcı olmak istiyorum</a>
                     <?php endif; ?>
                     <a class="btn btn-outline" href="<?php echo url_path('pages/auctions.php'); ?>">Yeni ilan ver</a>
                     <a class="btn btn-outline" href="<?php echo url_path('pages/auctions.php'); ?>">Açık artırmalarım</a>
@@ -169,11 +186,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <div class="card" style="margin-top: 24px;">
+    <div class="card" id="seller-basvuru" style="margin-top: 24px;">
         <h2>Satıcı Olmak İstiyorum</h2>
-        <p>Satıcı başvurunu hemen gönderebilirsin.</p>
+        <p>Normal kullanıcıysan sözleşmeyi kabul ederek satıcı panelini aktif edebilirsin.</p>
         <?php if ($successMessage): ?>
-            <div class="card" style="background: #e4f9ef; color: #1f9d62; margin-bottom: 16px;">
+            <div class="card" style="background: <?php echo $successType === 'ok' ? '#e4f9ef' : '#ffe1e6'; ?>; color: <?php echo $successType === 'ok' ? '#1f9d62' : '#b3283b'; ?>; margin-bottom: 16px;">
                 <?php echo $successMessage; ?>
             </div>
         <?php endif; ?>
@@ -182,6 +199,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="text" name="store_name" placeholder="Mağaza adı" required />
             <input type="text" name="store_category" placeholder="Kategori" required />
             <textarea rows="4" name="store_note" placeholder="Kısaca mağazanı anlat"></textarea>
+            <label style="display:flex; gap:10px; align-items:center;">
+                <input type="checkbox" name="seller_agreement" value="1" required />
+                Satıcı sözleşmesini ve platform koşullarını kabul ediyorum
+            </label>
             <button class="btn btn-primary" type="submit">Başvuruyu Gönder</button>
         </form>
     </div>

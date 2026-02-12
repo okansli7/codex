@@ -20,8 +20,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $lots = max(1, (int) ($_POST['lots'] ?? 1));
         $status = trim($_POST['status'] ?? 'Yayında');
         $image = trim($_POST['image'] ?? '');
+        $galleryRaw = trim($_POST['gallery_urls'] ?? '');
+        $tagRaw = trim($_POST['tags'] ?? '');
         $endAtInput = trim($_POST['end_at'] ?? '');
         $endAt = $endAtInput !== '' ? date('Y-m-d H:i:s', strtotime($endAtInput)) : date('Y-m-d H:i:s', strtotime('+7 days'));
+        $gallery = array_values(array_filter(array_map('trim', explode(',', $galleryRaw))));
+        if (empty($gallery) && $image !== '') {
+            $gallery = [$image];
+        }
+        $tags = array_values(array_filter(array_map('trim', explode(',', $tagRaw))));
 
         if ($title !== '' && $price > 0) {
             $ids = array_column($_SESSION['products'], 'id');
@@ -35,6 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'end_at' => $endAt,
                 'price' => $price,
                 'image' => $image !== '' ? $image : 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80',
+                'gallery' => !empty($gallery) ? $gallery : [($image !== '' ? $image : 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80')],
+                'tags' => $tags,
             ];
             $message = 'Ürün eklendi.';
         } else {
@@ -51,6 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $product['lots'] = max(1, (int) ($_POST['lots'] ?? $product['lots']));
                 $product['status'] = trim($_POST['status'] ?? $product['status']);
                 $product['image'] = trim($_POST['image'] ?? $product['image']);
+                $galleryRaw = trim($_POST['gallery_urls'] ?? '');
+                if ($galleryRaw !== '') {
+                    $product['gallery'] = array_values(array_filter(array_map('trim', explode(',', $galleryRaw))));
+                }
+                $tagRaw = trim($_POST['tags'] ?? '');
+                $product['tags'] = $tagRaw !== '' ? array_values(array_filter(array_map('trim', explode(',', $tagRaw)))) : [];
                 $endAtInput = trim($_POST['end_at'] ?? '');
                 if ($endAtInput !== '') {
                     $product['end_at'] = date('Y-m-d H:i:s', strtotime($endAtInput));
@@ -141,6 +156,8 @@ $sellerProducts = array_values(array_filter($_SESSION['products'], fn(array $pro
                 <input type="number" name="price" min="1" placeholder="Başlangıç fiyatı" required />
                 <input type="number" name="lots" min="1" value="1" placeholder="Lot sayısı" required />
                 <input type="url" name="image" placeholder="Ürün görsel URL" />
+                <input type="text" name="gallery_urls" placeholder="Ek fotoğraflar (virgülle URL)" />
+                <input type="text" name="tags" placeholder="Etiketler (virgülle: antika,retro,koleksiyon)" />
                 <input type="text" name="status" value="Yayında" placeholder="Durum" />
                 <label class="muted">Müzayede bitiş tarihi</label>
                 <input type="datetime-local" name="end_at" />
@@ -153,6 +170,9 @@ $sellerProducts = array_values(array_filter($_SESSION['products'], fn(array $pro
                 <div class="card">
                     <img class="auction-thumb" src="<?php echo htmlspecialchars($product['image'] ?? ''); ?>" alt="<?php echo htmlspecialchars($product['title']); ?>" />
                     <h3><?php echo htmlspecialchars($product['title']); ?></h3>
+                    <?php if (!empty($product['tags'])): ?>
+                        <p class="muted">#<?php echo htmlspecialchars(implode(' #', $product['tags'])); ?></p>
+                    <?php endif; ?>
                     <p>Kalan süre: <span class="countdown-live" data-end-at="<?php echo product_end_at($product); ?>"><?php echo product_countdown_label($product); ?></span></p>
                     <p>Bitiş: <?php echo htmlspecialchars(product_deadline_label($product)); ?></p>
                     <form class="form" method="post">
@@ -163,6 +183,8 @@ $sellerProducts = array_values(array_filter($_SESSION['products'], fn(array $pro
                         <input type="number" name="lots" min="1" value="<?php echo (int) $product['lots']; ?>" />
                         <input type="text" name="status" value="<?php echo htmlspecialchars($product['status']); ?>" />
                         <input type="url" name="image" value="<?php echo htmlspecialchars($product['image'] ?? ''); ?>" />
+                        <input type="text" name="gallery_urls" value="<?php echo htmlspecialchars(implode(', ', $product['gallery'] ?? [])); ?>" />
+                        <input type="text" name="tags" value="<?php echo htmlspecialchars(implode(', ', $product['tags'] ?? [])); ?>" />
                         <input type="datetime-local" name="end_at" value="<?php echo date('Y-m-d\TH:i', product_end_at($product)); ?>" />
                         <div class="actions">
                             <button class="btn btn-outline" type="submit">Düzenle</button>

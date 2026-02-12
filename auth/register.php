@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config.php';
 $successMessage = '';
 $redirectTo = '';
+$errorMessage = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name'] ?? '');
@@ -9,21 +10,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $phone = trim($_POST['phone'] ?? '');
     $password = trim($_POST['password'] ?? '');
     $sellerIntent = !empty($_POST['seller_intent']);
+    $sellerAgreement = !empty($_POST['seller_agreement']);
 
-    $_SESSION['user'] = [
-        'name' => $name !== '' ? $name : 'Yeni Üye',
-        'email' => $email !== '' ? $email : 'user@artirup.com',
-        'phone' => $phone,
-        'password' => $password,
-        'role' => $sellerIntent ? 'Satıcı' : 'Kullanıcı',
-        'seller_intent' => $sellerIntent,
-        'avatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=facearea&w=160&h=160&q=80',
-        'purchases' => 0,
-        'vip' => false,
-    ];
+    if ($sellerIntent && !$sellerAgreement) {
+        $errorMessage = 'Satıcı olarak kayıt olmak için satıcı sözleşmesini kabul etmelisin.';
+    }
 
-    $successMessage = 'Başarılı giriş yapılıyor. Profiline yönlendiriliyorsun...';
-    $redirectTo = url_path('profile.php');
+    if ($errorMessage === '') {
+        $_SESSION['user'] = [
+            'name' => $name !== '' ? $name : 'Yeni Üye',
+            'email' => $email !== '' ? $email : 'user@artirup.com',
+            'phone' => $phone,
+            'password' => $password,
+            'role' => $sellerIntent ? 'Satıcı' : 'Kullanıcı',
+            'seller_intent' => $sellerIntent,
+            'seller_agreement' => $sellerIntent ? $sellerAgreement : false,
+            'avatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=facearea&w=160&h=160&q=80',
+            'purchases' => 0,
+            'vip' => false,
+        ];
+
+        $successMessage = 'Başarılı giriş yapılıyor. Profiline yönlendiriliyorsun...';
+        $redirectTo = url_path('profile.php');
+    }
 }
 ?>
 <!doctype html>
@@ -114,6 +123,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </header>
 
 <section class="container">
+    <?php if ($errorMessage): ?>
+        <div class="card" style="max-width: 620px; margin: 0 auto 24px; background:#ffe1e6; color:#b3283b;">
+            <?php echo htmlspecialchars($errorMessage); ?>
+        </div>
+    <?php endif; ?>
     <?php if ($successMessage): ?>
         <div class="card" style="max-width: 620px; margin: 0 auto 24px;">
             <h2><?php echo $successMessage; ?></h2>
@@ -144,6 +158,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label style="display: flex; gap: 10px; align-items: center;">
                 <input type="checkbox" name="seller_intent" value="1" />
                 Satıcı olmak istiyorum
+            </label>
+            <label style="display: flex; gap: 10px; align-items: center;">
+                <input type="checkbox" name="seller_agreement" value="1" />
+                Satıcı sözleşmesini okudum ve kabul ediyorum
             </label>
             <button class="btn btn-primary" type="submit">Hesap Oluştur</button>
         </form>
