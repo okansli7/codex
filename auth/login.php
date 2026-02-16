@@ -29,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($user) {
+        session_regenerate_id(true);
         $_SESSION['user'] = $user;
         $successMessage = 'Başarılı giriş yapılıyor. Profiline yönlendiriliyorsun...';
         $redirectTo = url_path('profile.php');

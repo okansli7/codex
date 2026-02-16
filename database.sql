@@ -73,7 +73,9 @@ CREATE TABLE IF NOT EXISTS auctions (
   status ENUM('scheduled','active','ended','ended_no_winner','cancelled') NOT NULL DEFAULT 'scheduled',
   FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE,
   FOREIGN KEY (current_winner_id) REFERENCES users(id) ON DELETE SET NULL,
-  INDEX idx_auctions_status_time (status, end_time)
+  INDEX idx_auctions_status_time (status, end_time),
+  INDEX idx_auctions_end_time (end_time),
+  INDEX idx_auctions_status (status)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS bids (
@@ -131,16 +133,16 @@ ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 
 CREATE TABLE IF NOT EXISTS settings (
-  setting_key VARCHAR(120) PRIMARY KEY,
-  setting_value TEXT NOT NULL,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  k VARCHAR(64) PRIMARY KEY,
+  v TEXT NOT NULL
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS home_slides (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  eyebrow VARCHAR(140) NULL,
   title VARCHAR(180) NOT NULL,
-  subtitle VARCHAR(255) NULL,
-  button_text VARCHAR(80) NULL,
+  `desc` TEXT NULL,
+  cta VARCHAR(80) NULL,
   button_url VARCHAR(255) NULL,
   image_path VARCHAR(255) NOT NULL,
   sort_order INT NOT NULL DEFAULT 0,
@@ -150,7 +152,7 @@ CREATE TABLE IF NOT EXISTS home_slides (
 
 CREATE TABLE IF NOT EXISTS home_sections (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  type ENUM('featured_listings','auction_ending_soon','categories_grid','banner','html_block') NOT NULL,
+  type ENUM('ending_soon_auctions','new_listings','categories_grid','banner','html_block') NOT NULL,
   title VARCHAR(180) NOT NULL,
   settings_json JSON NULL,
   sort_order INT NOT NULL DEFAULT 0,
@@ -173,14 +175,17 @@ CREATE TABLE IF NOT EXISTS categories (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
-INSERT INTO settings (setting_key, setting_value) VALUES
+INSERT INTO settings (k, v) VALUES
 ('commission_rate','0.10'),
-('default_min_increment','10'),
 ('extend_window_seconds','120'),
 ('extend_by_seconds','120'),
+('default_min_increment','10'),
+('support_phone','+90 850 840 00 00'),
+('support_email','destek@artirup.com'),
 ('footer_text','Artirup © 2050'),
-('social_links','{"instagram":"","facebook":"","x":""}')
-ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
+('site_logo',''),
+('brand_name','Artirup')
+ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 INSERT INTO pages_static (slug,title,body_html) VALUES
 ('about','Hakkımızda','<p>Artirup hakkında sayfa içeriği.</p>'),
@@ -188,3 +193,18 @@ INSERT INTO pages_static (slug,title,body_html) VALUES
 ('terms','Kullanım Şartları','<p>Kullanım şartları.</p>'),
 ('faq','Sık Sorulan Sorular','<p>SSS içeriği.</p>')
 ON DUPLICATE KEY UPDATE title=VALUES(title), body_html=VALUES(body_html);
+
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NULL,
+  action VARCHAR(80) NOT NULL,
+  entity VARCHAR(80) NOT NULL,
+  entity_id BIGINT UNSIGNED NULL,
+  ip VARCHAR(64) NOT NULL,
+  ua VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_audit_user (user_id),
+  INDEX idx_audit_action (action),
+  INDEX idx_audit_created (created_at)
+) ENGINE=InnoDB;

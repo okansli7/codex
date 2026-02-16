@@ -10,8 +10,8 @@ if($_SERVER['REQUEST_METHOD']==='POST' && $pdo){
     $slug=slugify($_POST['slug']??'');$title=trim($_POST['title']??'');$body=$_POST['body_html']??'';
     if($slug===''){throw new RuntimeException('Slug zorunlu');}
     $st=$pdo->prepare('INSERT INTO pages_static (slug,title,body_html,updated_at) VALUES (:s,:t,:b,NOW()) ON DUPLICATE KEY UPDATE title=VALUES(title),body_html=VALUES(body_html),updated_at=NOW()');
-    $st->execute(['s'=>$slug,'t'=>$title,'b'=>$body]);$msg='Sayfa kaydedildi.';
-  } elseif($a==='delete'){$pdo->prepare('DELETE FROM pages_static WHERE slug=:s')->execute(['s'=>$_POST['slug']??'']);$msg='Sayfa silindi.';}
+    $st->execute(['s'=>$slug,'t'=>$title,'b'=>$body]);log_audit('static_page_saved','pages_static', null);$msg='Sayfa kaydedildi.';
+  } elseif($a==='delete'){ $slugDel = $_POST['slug']??''; $pdo->prepare('DELETE FROM pages_static WHERE slug=:s')->execute(['s'=>$slugDel]); log_audit('static_page_deleted','pages_static', null); $msg='Sayfa silindi.'; }
  }catch(Throwable $e){$err=$e->getMessage();}
 }
 $rows=$pdo?$pdo->query('SELECT * FROM pages_static ORDER BY slug')->fetchAll():[];

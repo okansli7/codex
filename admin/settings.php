@@ -11,6 +11,7 @@ if (!isset($_SESSION['settings'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_csrf();
     $action = $_POST['action'] ?? '';
     if ($action === 'upload_logo' && !empty($_FILES['logo']['name']) && is_uploaded_file($_FILES['logo']['tmp_name'])) {
         $uploadsDir = __DIR__ . '/../uploads';
@@ -209,6 +210,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         setting_set('extend_by_seconds', trim($_POST['extend_by_seconds'] ?? '120'));
         setting_set('footer_text', trim($_POST['footer_text'] ?? 'Artirup © 2050'));
         setting_set('social_links', trim($_POST['social_links'] ?? '{}'));
+        log_audit('settings_updated', 'settings');
         $message = 'Global ayarlar güncellendi.';
     }
 
@@ -276,12 +278,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php endif; ?>
                 </div>
                 <div class="actions">
-                    <form class="actions" method="post" enctype="multipart/form-data">
+                    <form class="actions" method="post" enctype="multipart/form-data"><?php echo csrf_input(); ?>
                         <input type="hidden" name="action" value="upload_logo" />
                         <input type="file" name="logo" accept="image/*" />
                         <button class="btn btn-outline" type="submit">Logo yükle</button>
                     </form>
-                    <form class="actions" method="post">
+                    <form class="actions" method="post"><?php echo csrf_input(); ?>
                         <input type="hidden" name="action" value="delete_logo" />
                         <button class="btn btn-danger" type="submit">Sil</button>
                     </form>
@@ -307,7 +309,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php foreach ($_SESSION['settings']['slides'] as $index => $slide): ?>
                     <tr>
                         <td>
-                            <form class="form" method="post" enctype="multipart/form-data">
+                            <form class="form" method="post" enctype="multipart/form-data"><?php echo csrf_input(); ?>
                                 <input type="hidden" name="action" value="update_slide" />
                                 <input type="hidden" name="index" value="<?php echo $index; ?>" />
                                 <input type="text" name="eyebrow" value="<?php echo htmlspecialchars($slide['eyebrow'] ?? ''); ?>" />
@@ -331,7 +333,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <td class="actions">
                                 <button class="btn btn-outline" type="submit">Düzenle</button>
                             </form>
-                            <form method="post">
+                            <form method="post"><?php echo csrf_input(); ?>
                                 <input type="hidden" name="action" value="delete_slide" />
                                 <input type="hidden" name="index" value="<?php echo $index; ?>" />
                                 <button class="btn btn-danger" type="submit">Sil</button>
@@ -342,7 +344,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </tbody>
         </table>
         <div style="margin-top: 12px;">
-            <form class="form" method="post" enctype="multipart/form-data">
+            <form class="form" method="post" enctype="multipart/form-data"><?php echo csrf_input(); ?>
                 <input type="hidden" name="action" value="add_slide" />
                 <input type="text" name="eyebrow" placeholder="Üst başlık" />
                 <input type="text" name="title" placeholder="Başlık" />
@@ -361,7 +363,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php foreach ($_SESSION['settings']['categories'] as $index => $category): ?>
                 <div class="lot-item">
                     <div>
-                        <form class="form" method="post">
+                        <form class="form" method="post"><?php echo csrf_input(); ?>
                             <input type="hidden" name="action" value="update_category" />
                             <input type="hidden" name="index" value="<?php echo $index; ?>" />
                             <input type="text" name="category" value="<?php echo htmlspecialchars($category); ?>" />
@@ -369,7 +371,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </form>
                     </div>
                     <div class="actions">
-                        <form method="post">
+                        <form method="post"><?php echo csrf_input(); ?>
                             <input type="hidden" name="action" value="delete_category" />
                             <input type="hidden" name="index" value="<?php echo $index; ?>" />
                             <button class="btn btn-danger" type="submit">Sil</button>
@@ -379,7 +381,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endforeach; ?>
         </div>
         <div style="margin-top: 12px;">
-            <form class="form" method="post">
+            <form class="form" method="post"><?php echo csrf_input(); ?>
                 <input type="hidden" name="action" value="add_category" />
                 <input type="text" name="category" placeholder="Yeni kategori" />
                 <button class="btn btn-primary" type="submit">Kategori ekle</button>
@@ -401,7 +403,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php foreach ($_SESSION['settings']['posts'] as $index => $post): ?>
                     <tr>
                         <td>
-                            <form class="form" method="post">
+                            <form class="form" method="post"><?php echo csrf_input(); ?>
                                 <input type="hidden" name="action" value="update_post" />
                                 <input type="hidden" name="index" value="<?php echo $index; ?>" />
                                 <input type="text" name="title" value="<?php echo htmlspecialchars($post['title']); ?>" />
@@ -412,7 +414,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <td class="actions">
                                 <button class="btn btn-outline" type="submit">Düzenle</button>
                             </form>
-                            <form method="post">
+                            <form method="post"><?php echo csrf_input(); ?>
                                 <input type="hidden" name="action" value="delete_post" />
                                 <input type="hidden" name="index" value="<?php echo $index; ?>" />
                                 <button class="btn btn-danger" type="submit">Sil</button>
@@ -423,7 +425,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </tbody>
         </table>
         <div style="margin-top: 12px;">
-            <form class="form" method="post">
+            <form class="form" method="post"><?php echo csrf_input(); ?>
                 <input type="hidden" name="action" value="add_post" />
                 <input type="text" name="title" placeholder="Blog başlığı" />
                 <input type="text" name="image" placeholder="Görsel açıklaması" />
@@ -447,7 +449,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php foreach ($_SESSION['settings']['auctions'] as $index => $auction): ?>
                     <tr>
                         <td>
-                            <form class="form" method="post">
+                            <form class="form" method="post"><?php echo csrf_input(); ?>
                                 <input type="hidden" name="action" value="update_home_auction" />
                                 <input type="hidden" name="index" value="<?php echo $index; ?>" />
                                 <input type="text" name="title" value="<?php echo htmlspecialchars($auction['title']); ?>" />
@@ -461,7 +463,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <td class="actions">
                                 <button class="btn btn-outline" type="submit">Düzenle</button>
                             </form>
-                            <form method="post">
+                            <form method="post"><?php echo csrf_input(); ?>
                                 <input type="hidden" name="action" value="delete_home_auction" />
                                 <input type="hidden" name="index" value="<?php echo $index; ?>" />
                                 <button class="btn btn-danger" type="submit">Sil</button>
@@ -472,7 +474,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </tbody>
         </table>
         <div style="margin-top: 12px;">
-            <form class="form" method="post">
+            <form class="form" method="post"><?php echo csrf_input(); ?>
                 <input type="hidden" name="action" value="add_home_auction" />
                 <input type="text" name="title" placeholder="Açık artırma başlığı" />
                 <input type="text" name="image" placeholder="Görsel açıklaması" />
@@ -496,7 +498,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php foreach ($_SESSION['settings']['faqs'] as $index => $faq): ?>
                     <tr>
                         <td>
-                            <form class="form" method="post">
+                            <form class="form" method="post"><?php echo csrf_input(); ?>
                                 <input type="hidden" name="action" value="update_faq" />
                                 <input type="hidden" name="index" value="<?php echo $index; ?>" />
                                 <input type="text" name="question" value="<?php echo htmlspecialchars($faq['q']); ?>" />
@@ -507,7 +509,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <td class="actions">
                                 <button class="btn btn-outline" type="submit">Düzenle</button>
                             </form>
-                            <form method="post">
+                            <form method="post"><?php echo csrf_input(); ?>
                                 <input type="hidden" name="action" value="delete_faq" />
                                 <input type="hidden" name="index" value="<?php echo $index; ?>" />
                                 <button class="btn btn-danger" type="submit">Sil</button>
@@ -518,7 +520,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </tbody>
         </table>
         <div style="margin-top: 12px;">
-            <form class="form" method="post">
+            <form class="form" method="post"><?php echo csrf_input(); ?>
                 <input type="hidden" name="action" value="add_faq" />
                 <input type="text" name="question" placeholder="Soru" />
                 <input type="text" name="answer" placeholder="Cevap" />
@@ -553,7 +555,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="panel" style="margin-top: 24px;">
         <h3>Sepet & Ödeme Yöntemleri</h3>
-        <form class="form" method="post">
+        <form class="form" method="post"><?php echo csrf_input(); ?>
             <input type="hidden" name="action" value="update_payment_methods" />
             <?php foreach (($_SESSION['settings']['payment_methods'] ?? []) as $methodKey => $method): ?>
                 <div class="lot-item" style="margin-bottom: 10px;">
@@ -572,7 +574,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="panel" style="margin-top: 24px;">
         <h3>Global Marketplace Ayarları</h3>
-        <form class="form" method="post">
+        <form class="form" method="post"><?php echo csrf_input(); ?>
             <input type="hidden" name="action" value="update_global_settings" />
             <input type="text" name="commission_rate" value="<?php echo e(setting_get('commission_rate','0.10')); ?>" placeholder="Komisyon oranı (örn 0.10)" />
             <input type="number" name="default_min_increment" value="<?php echo e(setting_get('default_min_increment','10')); ?>" placeholder="Varsayılan minimum artış" />

@@ -4,10 +4,10 @@ $slides = $_SESSION['settings']['slides'] ?? default_site_settings()['slides'];
 $cmsSlides = cms_home_slides();
 if (!empty($cmsSlides)) {
     $slides = array_map(fn(array $slide): array => [
-        'eyebrow' => 'Öne Çıkan',
+        'eyebrow' => $slide['eyebrow'] ?? 'Öne Çıkan',
         'title' => $slide['title'] ?? '',
-        'desc' => $slide['subtitle'] ?? '',
-        'cta' => $slide['button_text'] ?? 'Detay',
+        'desc' => $slide['desc'] ?? '',
+        'cta' => $slide['cta'] ?? 'Detay',
         'image' => $slide['image_path'] ?? '',
         'button_url' => $slide['button_url'] ?? '#',
     ], $cmsSlides);
@@ -20,6 +20,7 @@ $slides = array_map(
         'desc' => $slide['desc'] ?? '',
         'cta' => $slide['cta'] ?? 'Detayları Gör',
         'image' => ($slide['image'] ?? '') !== '' ? $slide['image'] : $defaultSlideImage,
+        'button_url' => $slide['button_url'] ?? '#',
     ],
     $slides
 );
@@ -841,7 +842,7 @@ $searchQuery = trim($_GET['q'] ?? '');
             <?php $settings = json_decode((string) ($section['settings_json'] ?? '{}'), true) ?: []; ?>
             <div class="card">
                 <h4><?php echo htmlspecialchars($section['title']); ?></h4>
-                <?php if ($section['type'] === 'featured_listings' && db_available()): ?>
+                <?php if ($section['type'] === 'new_listings' && db_available()): ?>
                     <?php
                         $limit = max(1, (int) ($settings['limit'] ?? 6));
                         $filter = $settings['filter'] ?? 'published';
@@ -850,7 +851,7 @@ $searchQuery = trim($_GET['q'] ?? '');
                         $items = $st->fetchAll();
                     ?>
                     <?php foreach ($items as $item): ?><p><?php echo e($item['title']); ?> - ₺<?php echo number_format((float)$item['price'],2); ?></p><?php endforeach; ?>
-                <?php elseif ($section['type'] === 'auction_ending_soon' && db_available()): ?>
+                <?php elseif ($section['type'] === 'ending_soon_auctions' && db_available()): ?>
                     <?php
                         $limit = max(1, (int) ($settings['limit'] ?? 6));
                         $items = db()->query("SELECT l.title,a.end_time,a.current_price FROM auctions a JOIN listings l ON l.id=a.listing_id WHERE a.status IN ('active','scheduled') ORDER BY a.end_time ASC LIMIT {$limit}")->fetchAll();

@@ -1,32 +1,39 @@
 # Artirup Marketplace
 
-## Admin CMS & Premium Auction Davranışı
+## Ready-to-Launch Notları
 
-### Admin CMS
+### 1) Cron (Açık artırma kapatma)
+Aşağıdaki komutla kapanış scriptini periyodik çalıştırın:
+
+```bash
+php /path/to/project/scripts/close_auctions.php
+```
+
+- Log dosyası: `logs/cron_auctions.log`
+- Script, `end_time <= NOW()` olan açık artırmaları transaction + `FOR UPDATE` ile güvenli şekilde finalize eder.
+
+### 2) Admin CMS Kullanımı
 - **Slider Yönetimi:** `/admin/home_slider.php`
-  - `home_slides` tablosundan slider CRUD, sıralama (`sort_order`) ve aktif/pasif (`is_active`) yönetimi.
-- **Ana Sayfa Section Builder:** `/admin/home_sections.php`
-  - `home_sections` üzerinden dinamik section tipleri: `featured_listings`, `auction_ending_soon`, `categories_grid`, `banner`, `html_block`.
+  - tablo: `home_slides`
+  - alanlar: `eyebrow, title, desc, cta, button_url, image_path, sort_order, is_active`
+- **Section Builder:** `/admin/home_sections.php`
+  - tablo: `home_sections`
+  - tipler: `ending_soon_auctions`, `new_listings`, `categories_grid`, `banner`, `html_block`
 - **Global Ayarlar:** `/admin/settings.php`
-  - `settings` tablosunda şu anahtarlar yönetilir:
-    - `commission_rate`
-    - `default_min_increment`
-    - `extend_window_seconds`
-    - `extend_by_seconds`
-    - `footer_text`
-    - `social_links`
-- **Static Page Manager:** `/admin/pages.php`
-  - `pages_static` tablosunda slug bazlı içerik yönetimi (`about`, `privacy`, `terms`, `faq`).
-  - Public render: `/pages/static.php?slug=...`
+  - tablo: `settings(k,v)`
+  - anahtarlar: `commission_rate`, `default_min_increment`, `extend_window_seconds`, `extend_by_seconds`, `support_phone`, `support_email`, `footer_text`, `site_logo`, `brand_name`
+- **Static Pages:** `/admin/pages.php`
+  - tablo: `pages_static`
+  - public: `/pages/static.php?slug=about|privacy|terms|faq`
 
-### Premium Auction
-- **Canlı state endpoint:** `/pages/auction_state.php`
-  - JSON: `current_price`, `bid_count`, `highest_bidder_masked`, `end_time`, `status`, `server_time`
-- **Bid anti-sniping:** `/pages/listing.php`
-  - Teklif, `end_time`a `extend_window_seconds` içinde geldiyse otomatik `extend_by_seconds` kadar uzatılır.
-- **Auction kapanış scripti:** `/scripts/close_auctions.php`
-  - `FOR UPDATE` + transaction ile güvenli kapanış.
-  - Senaryolar:
-    - teklif yoksa `ended_no_winner`
-    - reserve geçilmemişse `ended_no_winner`
-    - geçerliyse order + wallet credit oluşturulur.
+### 3) Auction Kuralları
+- **Min teklif mantığı**
+  - Teklif yoksa: minimum teklif = `starting_price`
+  - Teklif varsa: minimum teklif = `current_price + min_increment`
+- **Anti-sniping**
+  - Son `extend_window_seconds` içinde teklif gelirse `end_time` otomatik `extend_by_seconds` kadar uzatılır.
+- **Kazanan gizleme**
+  - Endpoint/UI kazananı maskeli gösterir (`E*** Y***`), ham PII dönmez.
+- **Canlı state endpoint**
+  - `GET /pages/auction_state.php?id=LISTING_ID`
+  - dönen alanlar: `status, current_price, end_time, server_time, bid_count, min_increment, min_valid_bid, winner_masked, reserve_met`

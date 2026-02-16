@@ -183,11 +183,17 @@ function url_path(string $path): string
 
 function site_brand_name(): string
 {
+    if (db_available()) {
+        return settings_get('brand_name', ($_SESSION['settings']['brand_name'] ?? 'Artirup'));
+    }
     return $_SESSION['settings']['brand_name'] ?? 'Artirup';
 }
 
 function site_logo_url(): string
 {
+    if (db_available()) {
+        return settings_get('site_logo', ($_SESSION['settings']['logo'] ?? ''));
+    }
     return $_SESSION['settings']['logo'] ?? '';
 }
 
@@ -714,7 +720,9 @@ function db_sync_session_user(array $dbUser): void
 
 function create_order_and_wallet_credit(PDO $pdo, array $auction): void
 {
-    $commission = round((float) $auction['current_price'] * MARKETPLACE_COMMISSION_RATE, 2);
+    $commissionRate = (float) settings_get('commission_rate', (string) MARKETPLACE_COMMISSION_RATE);
+    if ($commissionRate < 0) { $commissionRate = 0; }
+    $commission = round((float) $auction['current_price'] * $commissionRate, 2);
     $sellerAmount = round((float) $auction['current_price'] - $commission, 2);
 
     $pdo->prepare('INSERT INTO orders (listing_id, seller_id, buyer_id, total_amount, commission_amount, seller_amount, status, created_at) VALUES (:listing_id,:seller_id,:buyer_id,:total,:commission,:seller_amount,\'pending_payment\',NOW())')
@@ -750,6 +758,10 @@ function setting_defaults(): array
         'site_logo' => site_logo_url(),
         'footer_text' => 'Artirup © 2050',
         'social_links' => json_encode(['instagram' => '', 'facebook' => '', 'x' => ''], JSON_UNESCAPED_UNICODE),
+        'support_phone' => '+90 850 840 00 00',
+        'support_email' => 'destek@artirup.com',
+        'site_logo' => '',
+        'brand_name' => 'Artirup',
     ];
 }
 
@@ -760,9 +772,9 @@ function setting_get(string $key, ?string $default = null): string
         $cache = setting_defaults();
         $pdo = db();
         if ($pdo) {
-            $st = $pdo->query('SELECT setting_key, setting_value FROM settings');
+            $st = $pdo->query('SELECT k, v FROM settings');
             foreach ($st->fetchAll() as $row) {
-                $cache[$row['setting_key']] = (string) $row['setting_value'];
+                $cache[$row['k']] = (string) $row['v'];
             }
         }
     }
@@ -773,7 +785,7 @@ function setting_set(string $key, string $value): void
 {
     $pdo = db();
     if ($pdo) {
-        $st = $pdo->prepare('INSERT INTO settings (setting_key, setting_value, updated_at) VALUES (:k,:v,NOW()) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value), updated_at=NOW()');
+        $st = $pdo->prepare('INSERT INTO settings (k, v) VALUES (:k,:v) ON DUPLICATE KEY UPDATE v=VALUES(v)');
         $st->execute(['k' => $key, 'v' => $value]);
     }
 }
@@ -826,6 +838,65 @@ function masked_user_name(?int $userId): string
     if ($name === '') {
         return '***';
     }
-    $first = mb_substr($name, 0, 1);
-    return $first . str_repeat('*', max(2, mb_strlen($name) - 1));
+    return mask_name($name);
+}
+
+
+function settings_get(string $key, $default = null)
+{
+    return setting_get($key, $default === null ? null : (string) $default);
+}
+
+function settings_set(string $key, $value): void
+{
+    setting_set($key, is_string($value) ? $value : json_encode($value, JSON_UNESCAPED_UNICODE));
+}
+
+function mask_name(string $name): string
+{
+    $parts = array_values(array_filter(array_map('trim', explode(' ', $name))));
+    if (empty($parts)) {
+        return '***';
+    }
+    $masked = [];
+    foreach ($parts as $part) {
+        $first = mb_substr($part, 0, 1);
+        $masked[] = $first . '***';
+    }
+    return implode(' ', $masked);
+}
+
+function log_audit(string $action, string $entity, $entity_id = null): void
+{
+    $pdo = db();
+    if (!$pdo) {
+        return;
+    }
+    $user = current_user();
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
+    $st = $pdo->prepare('INSERT INTO audit_logs (user_id, action, entity, entity_id, ip, ua, created_at) VALUES (:user_id,:action,:entity,:entity_id,:ip,:ua,NOW())');
+    $st->execute([
+        'user_id' => !empty($user['id']) ? (int) $user['id'] : null,
+        'action' => $action,
+        'entity' => $entity,
+        'entity_id' => $entity_id !== null ? (int) $entity_id : null,
+        'ip' => (string) $ip,
+        'ua' => mb_substr((string) $ua, 0, 255),
+    ]);
+}
+
+function bid_rate_limited(int $userId): bool
+{
+    $key = 'bid_rate_' . $userId;
+    $now = time();
+    $bucket = $_SESSION[$key] ?? [];
+    $bucket = array_values(array_filter($bucket, fn($ts) => ($now - (int)$ts) < 60));
+    if (count($bucket) >= 30) {
+        $_SESSION[$key] = $bucket;
+        return true;
+    }
+    $bucket[] = $now;
+    $_SESSION[$key] = $bucket;
+    return false;
 }
