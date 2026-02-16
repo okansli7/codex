@@ -6,6 +6,7 @@ if (!$pdo) {
     exit(1);
 }
 
+$closed = 0;
 $pdo->beginTransaction();
 try {
     $st = $pdo->query("SELECT a.listing_id FROM auctions a WHERE a.status IN ('active','scheduled') AND a.end_time <= NOW() FOR UPDATE");
@@ -17,13 +18,21 @@ try {
         if (!$auction) {
             continue;
         }
-        $pdo->prepare("UPDATE auctions SET status='ended' WHERE listing_id=:id")->execute(['id' => (int) $listingId]);
-        if (!empty($auction['current_winner_id']) && (float) $auction['current_price'] > 0) {
-            create_order_and_wallet_credit($pdo, $auction);
+
+        $hasWinner = !empty($auction['current_winner_id']) && (float) $auction['current_price'] > 0;
+        $reserve = $auction['reserve_price'] !== null ? (float) $auction['reserve_price'] : null;
+        if (!$hasWinner || ($reserve !== null && (float) $auction['current_price'] < $reserve)) {
+            $pdo->prepare("UPDATE auctions SET status='ended_no_winner' WHERE listing_id=:id")->execute(['id' => (int) $listingId]);
+            $closed++;
+            continue;
         }
+
+        $pdo->prepare("UPDATE auctions SET status='ended' WHERE listing_id=:id")->execute(['id' => (int) $listingId]);
+        create_order_and_wallet_credit($pdo, $auction);
+        $closed++;
     }
     $pdo->commit();
-    echo 'Closed auctions: ' . count($ids) . PHP_EOL;
+    echo 'Closed auctions: ' . $closed . PHP_EOL;
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();

@@ -67,9 +67,10 @@ CREATE TABLE IF NOT EXISTS auctions (
   end_time DATETIME NOT NULL,
   starting_price DECIMAL(12,2) NOT NULL,
   min_increment DECIMAL(12,2) NOT NULL,
+  reserve_price DECIMAL(12,2) NULL,
   current_price DECIMAL(12,2) NOT NULL,
   current_winner_id BIGINT UNSIGNED NULL,
-  status ENUM('scheduled','active','ended','cancelled') NOT NULL DEFAULT 'scheduled',
+  status ENUM('scheduled','active','ended','ended_no_winner','cancelled') NOT NULL DEFAULT 'scheduled',
   FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE,
   FOREIGN KEY (current_winner_id) REFERENCES users(id) ON DELETE SET NULL,
   INDEX idx_auctions_status_time (status, end_time)
@@ -127,3 +128,63 @@ VALUES
   ('Artirup Admin', 'admin@artirup.com', '$2y$10$replace_with_bcrypt_hash', 'Admin'),
   ('Demo Buyer', 'buyer@artirup.com', '$2y$10$replace_with_bcrypt_hash', 'Buyer')
 ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+
+CREATE TABLE IF NOT EXISTS settings (
+  setting_key VARCHAR(120) PRIMARY KEY,
+  setting_value TEXT NOT NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS home_slides (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(180) NOT NULL,
+  subtitle VARCHAR(255) NULL,
+  button_text VARCHAR(80) NULL,
+  button_url VARCHAR(255) NULL,
+  image_path VARCHAR(255) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS home_sections (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  type ENUM('featured_listings','auction_ending_soon','categories_grid','banner','html_block') NOT NULL,
+  title VARCHAR(180) NOT NULL,
+  settings_json JSON NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS pages_static (
+  slug VARCHAR(120) PRIMARY KEY,
+  title VARCHAR(180) NOT NULL,
+  body_html MEDIUMTEXT NOT NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS categories (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+INSERT INTO settings (setting_key, setting_value) VALUES
+('commission_rate','0.10'),
+('default_min_increment','10'),
+('extend_window_seconds','120'),
+('extend_by_seconds','120'),
+('footer_text','Artirup © 2050'),
+('social_links','{"instagram":"","facebook":"","x":""}')
+ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
+
+INSERT INTO pages_static (slug,title,body_html) VALUES
+('about','Hakkımızda','<p>Artirup hakkında sayfa içeriği.</p>'),
+('privacy','Gizlilik Politikası','<p>Gizlilik metni.</p>'),
+('terms','Kullanım Şartları','<p>Kullanım şartları.</p>'),
+('faq','Sık Sorulan Sorular','<p>SSS içeriği.</p>')
+ON DUPLICATE KEY UPDATE title=VALUES(title), body_html=VALUES(body_html);

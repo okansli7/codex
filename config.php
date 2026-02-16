@@ -739,3 +739,93 @@ function create_order_and_wallet_credit(PDO $pdo, array $auction): void
             'amount' => $sellerAmount,
         ]);
 }
+
+function setting_defaults(): array
+{
+    return [
+        'commission_rate' => (string) MARKETPLACE_COMMISSION_RATE,
+        'default_min_increment' => '10',
+        'extend_window_seconds' => '120',
+        'extend_by_seconds' => '120',
+        'site_logo' => site_logo_url(),
+        'footer_text' => 'Artirup © 2050',
+        'social_links' => json_encode(['instagram' => '', 'facebook' => '', 'x' => ''], JSON_UNESCAPED_UNICODE),
+    ];
+}
+
+function setting_get(string $key, ?string $default = null): string
+{
+    static $cache = null;
+    if ($cache === null) {
+        $cache = setting_defaults();
+        $pdo = db();
+        if ($pdo) {
+            $st = $pdo->query('SELECT setting_key, setting_value FROM settings');
+            foreach ($st->fetchAll() as $row) {
+                $cache[$row['setting_key']] = (string) $row['setting_value'];
+            }
+        }
+    }
+    return (string) ($cache[$key] ?? ($default ?? ''));
+}
+
+function setting_set(string $key, string $value): void
+{
+    $pdo = db();
+    if ($pdo) {
+        $st = $pdo->prepare('INSERT INTO settings (setting_key, setting_value, updated_at) VALUES (:k,:v,NOW()) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value), updated_at=NOW()');
+        $st->execute(['k' => $key, 'v' => $value]);
+    }
+}
+
+function cms_home_slides(): array
+{
+    $pdo = db();
+    if (!$pdo) {
+        return [];
+    }
+    $st = $pdo->query('SELECT * FROM home_slides WHERE is_active=1 ORDER BY sort_order ASC, id ASC');
+    return $st->fetchAll() ?: [];
+}
+
+function cms_home_sections(): array
+{
+    $pdo = db();
+    if (!$pdo) {
+        return [];
+    }
+    $st = $pdo->query('SELECT * FROM home_sections WHERE is_active=1 ORDER BY sort_order ASC, id ASC');
+    return $st->fetchAll() ?: [];
+}
+
+function static_page(string $slug): ?array
+{
+    $pdo = db();
+    if (!$pdo) {
+        return null;
+    }
+    $st = $pdo->prepare('SELECT slug,title,body_html,updated_at FROM pages_static WHERE slug=:slug LIMIT 1');
+    $st->execute(['slug' => $slug]);
+    $row = $st->fetch();
+    return $row ?: null;
+}
+
+function masked_user_name(?int $userId): string
+{
+    if (!$userId) {
+        return '-';
+    }
+    $pdo = db();
+    if (!$pdo) {
+        return '***';
+    }
+    $st = $pdo->prepare('SELECT name FROM users WHERE id=:id LIMIT 1');
+    $st->execute(['id' => $userId]);
+    $name = (string) ($st->fetchColumn() ?: 'Kullanıcı');
+    $name = trim($name);
+    if ($name === '') {
+        return '***';
+    }
+    $first = mb_substr($name, 0, 1);
+    return $first . str_repeat('*', max(2, mb_strlen($name) - 1));
+}

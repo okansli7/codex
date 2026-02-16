@@ -52,6 +52,9 @@ $alerts = [
         <a href="<?php echo url_path('admin/moderators.php'); ?>">Moderatörler</a>
         <a href="#">Raporlar</a>
         <a href="<?php echo url_path('admin/settings.php'); ?>">Ayarlar</a>
+        <a href="<?php echo url_path('admin/pages.php'); ?>">Static Pages</a>
+        <a href="<?php echo url_path('admin/home_sections.php'); ?>">Home Sections</a>
+        <a href="<?php echo url_path('admin/home_slider.php'); ?>">Home Slider</a>
         <a href="<?php echo url_path('admin/marketplace.php'); ?>">Marketplace</a>
     </div>
 </aside>

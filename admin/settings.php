@@ -201,6 +201,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+
+    if ($action === 'update_global_settings') {
+        setting_set('commission_rate', trim($_POST['commission_rate'] ?? '0.10'));
+        setting_set('default_min_increment', trim($_POST['default_min_increment'] ?? '10'));
+        setting_set('extend_window_seconds', trim($_POST['extend_window_seconds'] ?? '120'));
+        setting_set('extend_by_seconds', trim($_POST['extend_by_seconds'] ?? '120'));
+        setting_set('footer_text', trim($_POST['footer_text'] ?? 'Artirup © 2050'));
+        setting_set('social_links', trim($_POST['social_links'] ?? '{}'));
+        $message = 'Global ayarlar güncellendi.';
+    }
+
     if ($action === 'update_payment_methods') {
         $configuredMethods = $_SESSION['settings']['payment_methods'] ?? [];
         foreach ($configuredMethods as $key => $method) {
@@ -557,6 +568,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button class="btn btn-primary" type="submit">Ödeme ayarlarını kaydet</button>
         </form>
     </div>
+
+
+    <div class="panel" style="margin-top: 24px;">
+        <h3>Global Marketplace Ayarları</h3>
+        <form class="form" method="post">
+            <input type="hidden" name="action" value="update_global_settings" />
+            <input type="text" name="commission_rate" value="<?php echo e(setting_get('commission_rate','0.10')); ?>" placeholder="Komisyon oranı (örn 0.10)" />
+            <input type="number" name="default_min_increment" value="<?php echo e(setting_get('default_min_increment','10')); ?>" placeholder="Varsayılan minimum artış" />
+            <input type="number" name="extend_window_seconds" value="<?php echo e(setting_get('extend_window_seconds','120')); ?>" placeholder="Anti-snipe pencere (sn)" />
+            <input type="number" name="extend_by_seconds" value="<?php echo e(setting_get('extend_by_seconds','120')); ?>" placeholder="Anti-snipe uzatma (sn)" />
+            <input type="text" name="footer_text" value="<?php echo e(setting_get('footer_text','Artirup © 2050')); ?>" placeholder="Footer metni" />
+            <textarea name="social_links" placeholder='{"instagram":"","facebook":"","x":""}'><?php echo e(setting_get('social_links','{}')); ?></textarea>
+            <button class="btn btn-primary" type="submit">Global ayarları kaydet</button>
+        </form>
+        <p style="margin-top:10px;">
+            <a class="btn btn-outline" href="<?php echo url_path('admin/home_slider.php'); ?>">Slider Manager</a>
+            <a class="btn btn-outline" href="<?php echo url_path('admin/home_sections.php'); ?>">Sections Builder</a>
+            <a class="btn btn-outline" href="<?php echo url_path('admin/pages.php'); ?>">Static Pages</a>
+        </p>
+    </div>
+
 </main>
 </body>
 </html>

@@ -1,6 +1,17 @@
 <?php
 require_once __DIR__ . '/config.php';
 $slides = $_SESSION['settings']['slides'] ?? default_site_settings()['slides'];
+$cmsSlides = cms_home_slides();
+if (!empty($cmsSlides)) {
+    $slides = array_map(fn(array $slide): array => [
+        'eyebrow' => 'Öne Çıkan',
+        'title' => $slide['title'] ?? '',
+        'desc' => $slide['subtitle'] ?? '',
+        'cta' => $slide['button_text'] ?? 'Detay',
+        'image' => $slide['image_path'] ?? '',
+        'button_url' => $slide['button_url'] ?? '#',
+    ], $cmsSlides);
+}
 $defaultSlideImage = 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80';
 $slides = array_map(
     fn(array $slide) => [
@@ -686,7 +697,7 @@ $searchQuery = trim($_GET['q'] ?? '');
                     <span><?php echo $slide['eyebrow']; ?></span>
                     <h2><?php echo $slide['title']; ?></h2>
                     <p><?php echo $slide['desc']; ?></p>
-                    <button class="btn btn-primary"><?php echo $slide['cta']; ?></button>
+                    <a class="btn btn-primary" href="<?php echo htmlspecialchars($slide['button_url'] ?? '#'); ?>"><?php echo $slide['cta']; ?></a>
                 </div>
                 <img src="<?php echo $slide['image']; ?>" alt="<?php echo $slide['title']; ?>" />
             </div>
@@ -819,6 +830,50 @@ $searchQuery = trim($_GET['q'] ?? '');
         <?php endforeach; ?>
     </div>
 </section>
+
+
+<?php $dynamicSections = cms_home_sections(); ?>
+<?php if (!empty($dynamicSections)): ?>
+<section class="section">
+    <h3>Dinamik Ana Sayfa Bölümleri</h3>
+    <div class="grid">
+        <?php foreach ($dynamicSections as $section): ?>
+            <?php $settings = json_decode((string) ($section['settings_json'] ?? '{}'), true) ?: []; ?>
+            <div class="card">
+                <h4><?php echo htmlspecialchars($section['title']); ?></h4>
+                <?php if ($section['type'] === 'featured_listings' && db_available()): ?>
+                    <?php
+                        $limit = max(1, (int) ($settings['limit'] ?? 6));
+                        $filter = $settings['filter'] ?? 'published';
+                        $st = db()->prepare('SELECT title,price FROM listings WHERE status=:status ORDER BY id DESC LIMIT ' . $limit);
+                        $st->execute(['status' => $filter]);
+                        $items = $st->fetchAll();
+                    ?>
+                    <?php foreach ($items as $item): ?><p><?php echo e($item['title']); ?> - ₺<?php echo number_format((float)$item['price'],2); ?></p><?php endforeach; ?>
+                <?php elseif ($section['type'] === 'auction_ending_soon' && db_available()): ?>
+                    <?php
+                        $limit = max(1, (int) ($settings['limit'] ?? 6));
+                        $items = db()->query("SELECT l.title,a.end_time,a.current_price FROM auctions a JOIN listings l ON l.id=a.listing_id WHERE a.status IN ('active','scheduled') ORDER BY a.end_time ASC LIMIT {$limit}")->fetchAll();
+                    ?>
+                    <?php foreach ($items as $item): ?><p><?php echo e($item['title']); ?> - <?php echo e($item['end_time']); ?> - ₺<?php echo number_format((float)$item['current_price'],2); ?></p><?php endforeach; ?>
+                <?php elseif ($section['type'] === 'categories_grid' && db_available()): ?>
+                    <?php
+                        $limit = max(1, (int) ($settings['limit'] ?? 8));
+                        $items = db()->query("SELECT name FROM categories WHERE is_active=1 ORDER BY sort_order,id LIMIT {$limit}")->fetchAll();
+                    ?>
+                    <?php foreach ($items as $item): ?><span class="pill"><?php echo e($item['name']); ?></span><?php endforeach; ?>
+                <?php elseif ($section['type'] === 'banner'): ?>
+                    <a href="<?php echo e($settings['link'] ?? '#'); ?>"><img class="auction-thumb" src="<?php echo e($settings['image'] ?? ''); ?>" alt="banner"></a>
+                <?php elseif ($section['type'] === 'html_block'): ?>
+                    <?php echo strip_tags((string) ($settings['html'] ?? ''), '<p><a><strong><em><ul><ol><li><br><h4><h3><h2><h1>'); ?>
+                <?php else: ?>
+                    <p class="muted">Tanımsız section tipi.</p>
+                <?php endif; ?>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</section>
+<?php endif; ?>
 
 <footer>
     <div class="footer-grid">
