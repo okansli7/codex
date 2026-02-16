@@ -1,6 +1,4 @@
--- Artirup Auction Platform Schema
--- Target DB: if0_41108134_index
-
+-- Artirup Multi Vendor + Auction Schema (MySQL InnoDB)
 CREATE DATABASE IF NOT EXISTS `if0_41108134_index`
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
@@ -8,101 +6,124 @@ CREATE DATABASE IF NOT EXISTS `if0_41108134_index`
 USE `if0_41108134_index`;
 
 CREATE TABLE IF NOT EXISTS users (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(120) NOT NULL,
-  email VARCHAR(150) NOT NULL UNIQUE,
+  email VARCHAR(180) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
-  role ENUM('Admin','Moderator','Seller','User') NOT NULL DEFAULT 'User',
-  avatar_url VARCHAR(255) DEFAULT NULL,
-  phone VARCHAR(40) DEFAULT NULL,
-  address TEXT DEFAULT NULL,
-  birthdate DATE DEFAULT NULL,
-  country_code CHAR(2) DEFAULT NULL,
-  vip TINYINT(1) NOT NULL DEFAULT 0,
-  purchases INT UNSIGNED NOT NULL DEFAULT 0,
+  role ENUM('Admin','Seller','Buyer') NOT NULL DEFAULT 'Buyer',
+  avatar_url VARCHAR(255) NULL,
+  phone VARCHAR(40) NULL,
+  country_code CHAR(2) NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS seller_requests (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS seller_profiles (
+  user_id BIGINT UNSIGNED PRIMARY KEY,
+  store_name VARCHAR(160) NOT NULL,
+  slug VARCHAR(180) NOT NULL UNIQUE,
+  logo VARCHAR(255) NULL,
+  banner VARCHAR(255) NULL,
+  description TEXT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS listings (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  seller_id BIGINT UNSIGNED NOT NULL,
+  type ENUM('fixed_price','auction') NOT NULL,
+  title VARCHAR(220) NOT NULL,
+  slug VARCHAR(240) NOT NULL UNIQUE,
+  description TEXT NOT NULL,
+  price DECIMAL(12,2) NOT NULL DEFAULT 0,
+  status ENUM('pending','published','rejected') NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_listings_status (status),
+  INDEX idx_listings_seller (seller_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS listing_images (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  listing_id BIGINT UNSIGNED NOT NULL,
+  path VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS auctions (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  title VARCHAR(180) NOT NULL,
-  description TEXT DEFAULT NULL,
-  seller_id INT UNSIGNED NOT NULL,
-  status ENUM('Live','Pending','Paused') NOT NULL DEFAULT 'Pending',
-  lot_count INT UNSIGNED NOT NULL DEFAULT 1,
-  start_price DECIMAL(12,2) NOT NULL DEFAULT 0,
-  current_price DECIMAL(12,2) NOT NULL DEFAULT 0,
-  ends_at DATETIME DEFAULT NULL,
-  image_url VARCHAR(255) DEFAULT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (seller_id) REFERENCES users(id)
+  listing_id BIGINT UNSIGNED PRIMARY KEY,
+  start_time DATETIME NOT NULL,
+  end_time DATETIME NOT NULL,
+  starting_price DECIMAL(12,2) NOT NULL,
+  min_increment DECIMAL(12,2) NOT NULL,
+  current_price DECIMAL(12,2) NOT NULL,
+  current_winner_id BIGINT UNSIGNED NULL,
+  status ENUM('scheduled','active','ended','cancelled') NOT NULL DEFAULT 'scheduled',
+  FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE,
+  FOREIGN KEY (current_winner_id) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_auctions_status_time (status, end_time)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS bids (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  auction_id INT UNSIGNED NOT NULL,
-  user_id INT UNSIGNED NOT NULL,
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  listing_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
   amount DECIMAL(12,2) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (auction_id) REFERENCES auctions(id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_bids_listing_created (listing_id, created_at)
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS comments (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  auction_id INT UNSIGNED NOT NULL,
-  user_id INT UNSIGNED NOT NULL,
-  content TEXT NOT NULL,
-  rating TINYINT UNSIGNED DEFAULT NULL,
+CREATE TABLE IF NOT EXISTS orders (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  listing_id BIGINT UNSIGNED NOT NULL,
+  seller_id BIGINT UNSIGNED NOT NULL,
+  buyer_id BIGINT UNSIGNED NOT NULL,
+  total_amount DECIMAL(12,2) NOT NULL,
+  commission_amount DECIMAL(12,2) NOT NULL,
+  seller_amount DECIMAL(12,2) NOT NULL,
+  status ENUM('pending_payment','paid','cancelled','refunded') NOT NULL DEFAULT 'pending_payment',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (auction_id) REFERENCES auctions(id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE,
+  FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (buyer_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_orders_seller (seller_id),
+  INDEX idx_orders_buyer (buyer_id)
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS categories (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(120) NOT NULL UNIQUE,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS seller_wallets (
+  seller_id BIGINT UNSIGNED PRIMARY KEY,
+  balance DECIMAL(12,2) NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS auction_categories (
-  auction_id INT UNSIGNED NOT NULL,
-  category_id INT UNSIGNED NOT NULL,
-  PRIMARY KEY (auction_id, category_id),
-  FOREIGN KEY (auction_id) REFERENCES auctions(id) ON DELETE CASCADE,
-  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+CREATE TABLE IF NOT EXISTS wallet_transactions (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  seller_id BIGINT UNSIGNED NOT NULL,
+  order_id BIGINT UNSIGNED NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  type ENUM('credit','debit') NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
+  INDEX idx_wallet_tx_seller (seller_id, created_at)
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS blog_posts (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  title VARCHAR(180) NOT NULL,
-  content TEXT NOT NULL,
-  image_url VARCHAR(255) DEFAULT NULL,
-  published_at DATETIME DEFAULT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS faqs (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  question VARCHAR(255) NOT NULL,
-  answer TEXT NOT NULL
-) ENGINE=InnoDB;
-
-CREATE TABLE IF NOT EXISTS site_settings (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  setting_key VARCHAR(100) NOT NULL UNIQUE,
-  setting_value TEXT NOT NULL,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
-
-INSERT INTO users (name, email, password_hash, role, vip)
+INSERT INTO users (name, email, password_hash, role)
 VALUES
-  ('Artirup Admin', 'admin@artirup.com', '$2y$10$replace_with_bcrypt_hash', 'Admin', 0),
-  ('Artirup Moderator', 'moderator@artirup.com', '$2y$10$replace_with_bcrypt_hash', 'Moderator', 0)
-ON DUPLICATE KEY UPDATE name=VALUES(name);
-
-INSERT INTO categories (name)
-VALUES ('Koleksiyon'), ('Sanat'), ('Teknoloji'), ('Moda')
-ON DUPLICATE KEY UPDATE name=VALUES(name);
+  ('Artirup Admin', 'admin@artirup.com', '$2y$10$replace_with_bcrypt_hash', 'Admin'),
+  ('Demo Buyer', 'buyer@artirup.com', '$2y$10$replace_with_bcrypt_hash', 'Buyer')
+ON DUPLICATE KEY UPDATE name = VALUES(name);

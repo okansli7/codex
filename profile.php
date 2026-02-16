@@ -15,6 +15,7 @@ $vip = !empty($user['vip']) || (($user['purchases'] ?? 0) >= 20);
 $countryOptions = country_options();
 $countryCode = $user['country'] ?? 'TR';
 $tickClass = '';
+require_csrf();
 if ($vip) {
     $tickClass = 'gold';
 } elseif ($role === 'Admin') {
@@ -60,6 +61,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$sellerAgreement) {
             $successMessage = 'Satıcı olmak için sözleşmeyi kabul etmelisin.';
             $successType = 'error';
+        } elseif (db_available() && !empty($user['id'])) {
+            $pdo = db();
+            try {
+                $pdo->beginTransaction();
+                $slug = slugify($sellerStore !== '' ? $sellerStore : ($user['name'] ?? 'store'));
+                $pdo->prepare('INSERT INTO seller_profiles (user_id,store_name,slug,description,created_at) VALUES (:uid,:store,:slug,:desc,NOW()) ON DUPLICATE KEY UPDATE store_name=VALUES(store_name), slug=VALUES(slug), description=VALUES(description)')->execute([
+                    'uid' => (int) $user['id'],
+                    'store' => $sellerStore !== '' ? $sellerStore : ($user['name'] ?? 'Mağazam'),
+                    'slug' => $slug,
+                    'desc' => trim($sellerCategory . ' ' . $sellerNote),
+                ]);
+                $pdo->prepare("INSERT INTO seller_requests (user_id,status,created_at) VALUES (:uid,'pending',NOW())")->execute(['uid' => (int) $user['id']]);
+                $pdo->commit();
+                $successMessage = 'Satıcı başvurun alındı. Admin onayından sonra panel açılacak.';
+                $successType = 'ok';
+            } catch (Throwable $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                $successMessage = 'Başvuru kaydedilemedi: ' . $e->getMessage();
+                $successType = 'error';
+            }
         } else {
             $_SESSION['seller_application'] = [
                 'store_name' => $sellerStore,
@@ -67,13 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'store_note' => $sellerNote,
                 'approved_at' => date('Y-m-d H:i:s'),
             ];
-            $user['role'] = 'Satıcı';
-            $user['seller_intent'] = true;
-            $user['seller_agreement'] = true;
-            $_SESSION['user'] = $user;
-            $role = $user['role'];
-            $tickClass = 'blue';
-            $successMessage = 'Satıcı sözleşmesi onaylandı. Satıcı panelin aktif edildi.';
+            $successMessage = 'DB olmadığı için demo modunda başvuru session içine kaydedildi.';
             $successType = 'ok';
         }
     }
@@ -143,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <h4>Hızlı İşlemler</h4>
                 <div class="form">
                     <?php if (($role === 'Satıcı' || is_seller()) && !$vip): ?>
-                        <a class="btn btn-outline" href="<?php echo url_path('seller/index.php'); ?>">Açık artırma oluştur</a>
+                        <a class="btn btn-outline" href="<?php echo url_path('seller/dashboard.php'); ?>">Açık artırma oluştur</a>
                     <?php elseif (!$vip): ?>
                         <a class="btn btn-outline" href="#seller-basvuru">Satıcı olmak istiyorum</a>
                     <?php endif; ?>
@@ -183,7 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php echo $profileMessage; ?>
             </div>
         <?php endif; ?>
-        <form class="form" method="post" enctype="multipart/form-data">
+        <form class="form" method="post" enctype="multipart/form-data"><?php echo csrf_input(); ?>
             <input type="hidden" name="action" value="update_profile" />
             <input type="text" name="name" placeholder="Ad Soyad" value="<?php echo htmlspecialchars($user['name']); ?>" required />
             <input type="text" name="address" placeholder="Yaşadığın adres" />
@@ -210,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php echo $successMessage; ?>
             </div>
         <?php endif; ?>
-        <form class="form" method="post">
+        <form class="form" method="post"><?php echo csrf_input(); ?>
             <input type="hidden" name="action" value="seller_application" />
             <input type="text" name="store_name" placeholder="Mağaza adı" required />
             <input type="text" name="store_category" placeholder="Kategori" required />
@@ -222,6 +239,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button class="btn btn-primary" type="submit">Başvuruyu Gönder</button>
         </form>
     </div>
+
+    <?php if (db_available() && !empty($user['id'])): ?>
+        <?php
+            $pdo = db();
+            $myBids = [];
+            $myOrders = [];
+            $st = $pdo->prepare('SELECT b.amount,b.created_at,l.title FROM bids b JOIN listings l ON l.id=b.listing_id WHERE b.user_id=:uid ORDER BY b.id DESC LIMIT 10');
+            $st->execute(['uid' => (int) $user['id']]);
+            $myBids = $st->fetchAll();
+            $st = $pdo->prepare('SELECT o.*, l.title FROM orders o JOIN listings l ON l.id=o.listing_id WHERE o.buyer_id=:uid ORDER BY o.id DESC LIMIT 10');
+            $st->execute(['uid' => (int) $user['id']]);
+            $myOrders = $st->fetchAll();
+        ?>
+        <div class="card" style="margin-top:24px;">
+            <h2>Tekliflerim & Siparişlerim</h2>
+            <div class="grid">
+                <div class="card"><h3>Son Teklifler</h3><?php foreach ($myBids as $bid): ?><p><?php echo e($bid['title']); ?> — ₺<?php echo number_format((float)$bid['amount'],2); ?></p><?php endforeach; ?></div>
+                <div class="card"><h3>Siparişlerim</h3><?php foreach ($myOrders as $order): ?><p>#<?php echo (int)$order['id']; ?> <?php echo e($order['title']); ?> (<?php echo e($order['status']); ?>)</p><?php endforeach; ?></div>
+            </div>
+        </div>
+    <?php endif; ?>
+
 </section>
 
 <footer>

@@ -3,18 +3,29 @@ require_once __DIR__ . '/../config.php';
 $errorMessage = '';
 $successMessage = '';
 $redirectTo = '';
+require_csrf();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = trim($_POST['password'] ?? '');
     $user = null;
 
-    if ($email === $adminAccount['email'] && $password === $adminAccount['password']) {
-        $user = $adminAccount;
-    } elseif ($email === $moderatorAccount['email'] && $password === $moderatorAccount['password']) {
-        $user = $moderatorAccount;
-    } elseif (!empty($_SESSION['user']) && $email === ($_SESSION['user']['email'] ?? '') && $password !== '') {
-        $user = $_SESSION['user'];
+    if (db_available()) {
+        $dbUser = db_user_by_email($email);
+        if ($dbUser && password_verify($password, (string) $dbUser['password_hash'])) {
+            db_sync_session_user($dbUser);
+            $user = $_SESSION['user'];
+        }
+    }
+
+    if (!$user) {
+        if ($email === $adminAccount['email'] && $password === $adminAccount['password']) {
+            $user = $adminAccount;
+        } elseif ($email === $moderatorAccount['email'] && $password === $moderatorAccount['password']) {
+            $user = $moderatorAccount;
+        } elseif (!empty($_SESSION['user']) && $email === ($_SESSION['user']['email'] ?? '') && $password !== '') {
+            $user = $_SESSION['user'];
+        }
     }
 
     if ($user) {
@@ -164,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php echo $errorMessage; ?>
             </div>
         <?php endif; ?>
-        <form class="form" method="post">
+        <form class="form" method="post"><?php echo csrf_input(); ?>
             <input type="email" name="email" placeholder="E-posta" required />
             <input type="password" name="password" placeholder="Şifre" id="password-input" required />
             <button class="btn btn-primary" type="submit">Giriş Yap</button>

@@ -6,6 +6,7 @@ $dashboardLabel = $currentUser ? user_dashboard_label($currentUser) : '';
 $avatar = $currentUser['avatar'] ?? 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=facearea&w=120&h=120&q=80';
 $message = '';
 $error = '';
+require_csrf();
 $searchQuery = trim($_GET['q'] ?? '');
 
 $filteredProducts = $_SESSION['products'];
@@ -144,13 +145,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <p>Bitiş: <?php echo htmlspecialchars(product_deadline_label($product)); ?> • <?php echo (int) $product['lots']; ?> lot</p>
                     <p>Başlangıç: ₺<?php echo number_format((int) $product['price']); ?></p>
                     <a class="btn btn-outline" href="<?php echo url_path('pages/product.php'); ?>?id=<?php echo $product['id']; ?>">Ürünü Gör</a>
-                    <form class="form" method="post">
+                    <form class="form" method="post"><?php echo csrf_input(); ?>
                         <input type="hidden" name="action" value="add_to_cart" />
                         <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>" />
                         <input type="number" name="qty" min="1" value="1" />
                         <button class="btn btn-primary" type="submit">Sepete Ekle</button>
                     </form>
-                    <form class="form" method="post">
+                    <form class="form" method="post"><?php echo csrf_input(); ?>
                         <input type="hidden" name="action" value="bid" />
                         <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>" />
                         <input type="number" name="amount" min="1" placeholder="Teklifin (₺)" required />
@@ -172,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         <?php endforeach; ?>
                         <?php if ($currentUser): ?>
-                            <form class="form" method="post">
+                            <form class="form" method="post"><?php echo csrf_input(); ?>
                                 <input type="hidden" name="action" value="add_comment" />
                                 <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>" />
                                 <input type="text" name="comment" placeholder="Yorum yaz" />

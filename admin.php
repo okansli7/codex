@@ -52,6 +52,7 @@ $alerts = [
         <a href="<?php echo url_path('admin/moderators.php'); ?>">Moderatörler</a>
         <a href="#">Raporlar</a>
         <a href="<?php echo url_path('admin/settings.php'); ?>">Ayarlar</a>
+        <a href="<?php echo url_path('admin/marketplace.php'); ?>">Marketplace</a>
     </div>
 </aside>
 <main>

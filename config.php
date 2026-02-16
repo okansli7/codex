@@ -520,3 +520,222 @@ function country_options(): array
         'ZW' => ['name' => 'Zimbabve', 'flag' => '🇿🇼'],
     ];
 }
+
+// --- Marketplace (PDO + RBAC + CSRF + uploads) ---
+const MARKETPLACE_COMMISSION_RATE = 0.10;
+const UPLOAD_MAX_BYTES = 5242880; // 5MB
+
+function db_config(): array
+{
+    return [
+        'host' => getenv('DB_HOST') ?: '127.0.0.1',
+        'port' => getenv('DB_PORT') ?: '3306',
+        'name' => getenv('DB_NAME') ?: 'if0_41108134_index',
+        'user' => getenv('DB_USER') ?: '',
+        'pass' => getenv('DB_PASS') ?: '',
+        'charset' => 'utf8mb4',
+    ];
+}
+
+function db(): ?PDO
+{
+    static $pdo = false;
+    if ($pdo !== false) {
+        return $pdo;
+    }
+
+    $cfg = db_config();
+    if ($cfg['user'] === '') {
+        $pdo = null;
+        return null;
+    }
+
+    try {
+        $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=%s', $cfg['host'], $cfg['port'], $cfg['name'], $cfg['charset']);
+        $pdo = new PDO($dsn, $cfg['user'], $cfg['pass'], [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ]);
+    } catch (Throwable $e) {
+        $pdo = null;
+    }
+
+    return $pdo;
+}
+
+function db_available(): bool
+{
+    return db() instanceof PDO;
+}
+
+function e(string $value): string
+{
+    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+function csrf_token(): string
+{
+    if (empty($_SESSION['_csrf'])) {
+        $_SESSION['_csrf'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['_csrf'];
+}
+
+function csrf_input(): string
+{
+    return '<input type="hidden" name="csrf_token" value="' . e(csrf_token()) . '">';
+}
+
+function csrf_validate(): bool
+{
+    $token = $_POST['csrf_token'] ?? '';
+    $current = $_SESSION['_csrf'] ?? '';
+    return is_string($token) && is_string($current) && $token !== '' && hash_equals($current, $token);
+}
+
+function require_csrf(): void
+{
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validate()) {
+        http_response_code(419);
+        exit('Geçersiz CSRF token.');
+    }
+}
+
+function role_slug(?string $role): string
+{
+    $r = mb_strtolower((string) $role);
+    return match ($r) {
+        'admin' => 'admin',
+        'satıcı', 'satici', 'seller', 'vendor' => 'seller',
+        default => 'buyer',
+    };
+}
+
+function has_role(string $role): bool
+{
+    $user = current_user();
+    return role_slug($user['role'] ?? null) === $role;
+}
+
+function require_login(): array
+{
+    $user = current_user();
+    if (!$user) {
+        header('Location: ' . url_path('auth/login.php'));
+        exit;
+    }
+    return $user;
+}
+
+function require_role(array $allowed): array
+{
+    $user = require_login();
+    $slug = role_slug($user['role'] ?? null);
+    if (!in_array($slug, $allowed, true)) {
+        http_response_code(403);
+        exit('Bu işlem için yetkiniz yok.');
+    }
+    return $user;
+}
+
+function slugify(string $text): string
+{
+    $text = trim(mb_strtolower($text));
+    $text = preg_replace('/[^\pL\pN]+/u', '-', $text) ?? '';
+    $text = trim($text, '-');
+    return $text !== '' ? $text : 'listing-' . bin2hex(random_bytes(3));
+}
+
+function upload_image(string $field, string $prefix = 'img_'): ?string
+{
+    if (empty($_FILES[$field]['name']) || !is_uploaded_file($_FILES[$field]['tmp_name'])) {
+        return null;
+    }
+
+    if ((int) ($_FILES[$field]['size'] ?? 0) > UPLOAD_MAX_BYTES) {
+        throw new RuntimeException('Dosya boyutu çok büyük.');
+    }
+
+    $tmp = $_FILES[$field]['tmp_name'];
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = (string) $finfo->file($tmp);
+
+    $allowed = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+    ];
+
+    if (!isset($allowed[$mime])) {
+        throw new RuntimeException('Sadece jpg/png/webp yüklenebilir.');
+    }
+
+    $uploadsDir = __DIR__ . '/uploads';
+    if (!is_dir($uploadsDir)) {
+        mkdir($uploadsDir, 0755, true);
+    }
+
+    $name = $prefix . bin2hex(random_bytes(16)) . '.' . $allowed[$mime];
+    $dest = $uploadsDir . '/' . $name;
+    if (!move_uploaded_file($tmp, $dest)) {
+        throw new RuntimeException('Dosya yüklenemedi.');
+    }
+
+    return url_path('uploads/' . $name);
+}
+
+function db_user_by_email(string $email): ?array
+{
+    $pdo = db();
+    if (!$pdo) {
+        return null;
+    }
+    $st = $pdo->prepare('SELECT * FROM users WHERE email = :email LIMIT 1');
+    $st->execute(['email' => $email]);
+    $row = $st->fetch();
+    return $row ?: null;
+}
+
+function db_sync_session_user(array $dbUser): void
+{
+    $_SESSION['user'] = [
+        'id' => (int) $dbUser['id'],
+        'name' => $dbUser['name'],
+        'email' => $dbUser['email'],
+        'role' => $dbUser['role'] === 'Seller' ? 'Satıcı' : ($dbUser['role'] === 'Admin' ? 'Admin' : 'Kullanıcı'),
+        'avatar' => $dbUser['avatar_url'] ?: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=facearea&w=160&h=160&q=80',
+        'phone' => $dbUser['phone'] ?? '',
+        'country' => $dbUser['country_code'] ?? 'TR',
+        'vip' => !empty($dbUser['vip']),
+        'purchases' => (int) ($dbUser['purchases'] ?? 0),
+    ];
+}
+
+function create_order_and_wallet_credit(PDO $pdo, array $auction): void
+{
+    $commission = round((float) $auction['current_price'] * MARKETPLACE_COMMISSION_RATE, 2);
+    $sellerAmount = round((float) $auction['current_price'] - $commission, 2);
+
+    $pdo->prepare('INSERT INTO orders (listing_id, seller_id, buyer_id, total_amount, commission_amount, seller_amount, status, created_at) VALUES (:listing_id,:seller_id,:buyer_id,:total,:commission,:seller_amount,\'pending_payment\',NOW())')
+        ->execute([
+            'listing_id' => $auction['listing_id'],
+            'seller_id' => $auction['seller_id'],
+            'buyer_id' => $auction['current_winner_id'],
+            'total' => $auction['current_price'],
+            'commission' => $commission,
+            'seller_amount' => $sellerAmount,
+        ]);
+
+    $orderId = (int) $pdo->lastInsertId();
+
+    $pdo->prepare('INSERT INTO seller_wallets (seller_id, balance, updated_at) VALUES (:seller_id, :amount, NOW()) ON DUPLICATE KEY UPDATE balance = balance + VALUES(balance), updated_at = NOW()')
+        ->execute(['seller_id' => $auction['seller_id'], 'amount' => $sellerAmount]);
+
+    $pdo->prepare('INSERT INTO wallet_transactions (seller_id, order_id, amount, type, created_at) VALUES (:seller_id,:order_id,:amount,\'credit\',NOW())')
+        ->execute([
+            'seller_id' => $auction['seller_id'],
+            'order_id' => $orderId,
+            'amount' => $sellerAmount,
+        ]);
+}

@@ -14,6 +14,7 @@ foreach ($_SESSION['products'] as $item) {
 }
 $message = '';
 $error = '';
+require_csrf();
 $productUrl = url_path('pages/product.php') . '?id=' . $productId;
 
 if (!$product) {
@@ -147,12 +148,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $product) {
                 </div>
                 <div class="card">
                     <h3>Teklif Ver</h3>
-                    <form class="form" method="post" style="margin-bottom: 12px;">
+                    <form class="form" method="post" style="margin-bottom: 12px;"><?php echo csrf_input(); ?>
                         <input type="hidden" name="action" value="add_to_cart" />
                         <input type="number" name="qty" min="1" value="1" />
                         <button class="btn btn-primary" type="submit">Sepete Ekle</button>
                     </form>
-                    <form class="form" method="post">
+                    <form class="form" method="post"><?php echo csrf_input(); ?>
                         <input type="hidden" name="action" value="bid" />
                         <input type="number" name="amount" min="1" placeholder="Teklif tutarı (₺)" required />
                         <button class="btn btn-primary" type="submit">Teklif ver</button>
@@ -186,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $product) {
                     </div>
                 <?php endforeach; ?>
                 <?php if ($currentUser): ?>
-                    <form class="form" method="post">
+                    <form class="form" method="post"><?php echo csrf_input(); ?>
                         <input type="hidden" name="action" value="add_comment" />
                         <input id="comment-input" type="text" name="comment" placeholder="Yorum yaz" />
                         <div class="emoji-row">

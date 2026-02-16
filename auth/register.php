@@ -3,6 +3,7 @@ require_once __DIR__ . '/../config.php';
 $successMessage = '';
 $redirectTo = '';
 $errorMessage = '';
+require_csrf();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name'] ?? '');
@@ -17,21 +18,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($errorMessage === '') {
-        $_SESSION['user'] = [
-            'name' => $name !== '' ? $name : 'Yeni Üye',
-            'email' => $email !== '' ? $email : 'user@artirup.com',
-            'phone' => $phone,
-            'password' => $password,
-            'role' => $sellerIntent ? 'Satıcı' : 'Kullanıcı',
-            'seller_intent' => $sellerIntent,
-            'seller_agreement' => $sellerIntent ? $sellerAgreement : false,
-            'avatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=facearea&w=160&h=160&q=80',
-            'purchases' => 0,
-            'vip' => false,
-        ];
+        if (db_available()) {
+            try {
+                $pdo = db();
+                if (db_user_by_email($email)) {
+                    throw new RuntimeException('Bu e-posta zaten kayıtlı.');
+                }
+                $role = $sellerIntent ? 'Seller' : 'Buyer';
+                $st = $pdo->prepare('INSERT INTO users (name,email,password_hash,role,phone,country_code,created_at,updated_at) VALUES (:name,:email,:password_hash,:role,:phone,:country,NOW(),NOW())');
+                $st->execute([
+                    'name' => $name !== '' ? $name : 'Yeni Üye',
+                    'email' => $email !== '' ? $email : ('user' . time() . '@artirup.com'),
+                    'password_hash' => password_hash($password !== '' ? $password : bin2hex(random_bytes(8)), PASSWORD_BCRYPT),
+                    'role' => $role,
+                    'phone' => $phone,
+                    'country' => 'TR',
+                ]);
+                $dbUser = db_user_by_email($email);
+                if ($dbUser) {
+                    db_sync_session_user($dbUser);
+                }
+            } catch (Throwable $e) {
+                $errorMessage = $e->getMessage();
+            }
+        }
 
-        $successMessage = 'Başarılı giriş yapılıyor. Profiline yönlendiriliyorsun...';
-        $redirectTo = url_path('profile.php');
+        if ($errorMessage === '' && !isset($_SESSION['user'])) {
+            $_SESSION['user'] = [
+                'name' => $name !== '' ? $name : 'Yeni Üye',
+                'email' => $email !== '' ? $email : 'user@artirup.com',
+                'phone' => $phone,
+                'password' => $password,
+                'role' => $sellerIntent ? 'Satıcı' : 'Kullanıcı',
+                'seller_intent' => $sellerIntent,
+                'seller_agreement' => $sellerIntent ? $sellerAgreement : false,
+                'avatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=facearea&w=160&h=160&q=80',
+                'purchases' => 0,
+                'vip' => false,
+            ];
+        }
+
+        if ($errorMessage === '') {
+            $successMessage = 'Başarılı giriş yapılıyor. Profiline yönlendiriliyorsun...';
+            $redirectTo = url_path('profile.php');
+        }
     }
 }
 ?>
@@ -165,7 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="card auth-card">
         <h1>Kayıt Ol</h1>
         <p>Artirup topluluğuna katıl, açık artırmaları kaçırma.</p>
-        <form class="form" method="post">
+        <form class="form" method="post"><?php echo csrf_input(); ?>
             <input type="text" name="name" placeholder="Ad Soyad" required />
             <input type="email" name="email" placeholder="E-posta" required />
             <input type="tel" name="phone" placeholder="Telefon" />
